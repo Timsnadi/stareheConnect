@@ -1,0 +1,22 @@
+{
+  "name": "stareheconnect",
+  "version": "1.0.0",
+  "description": "Mentorship and networking platform for Starehe students and alumni",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "axios": "^1.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "socket.io-client": "^4.8.3",
+    "vite": "^4.5.1"
+  }
+}
