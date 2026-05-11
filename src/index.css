@@ -345,8 +345,8 @@ input:focus, select:focus, textarea:focus {
   }
 
   main {
-    padding: 20px;
-    padding-bottom: 100px; /* Space for bottom nav */
+    padding: 12px;
+    padding-bottom: 80px; /* Space for bottom nav */
   }
 
   .sidebar {
@@ -354,11 +354,23 @@ input:focus, select:focus, textarea:focus {
   }
 
   .page-title {
-    font-size: 22px;
+    font-size: 18px;
   }
 
   .card-elevated, .card {
-    padding: 16px;
+    padding: 12px;
+  }
+
+  .section-heading {
+    font-size: 9px;
+  }
+
+  .card-title {
+    font-size: 14px;
+  }
+
+  .card-meta {
+    font-size: 11px;
   }
 
   /* Bottom Navigation */
@@ -367,7 +379,7 @@ input:focus, select:focus, textarea:focus {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 72px;
+    height: 60px;
     background: var(--bg-surface);
     border-top: var(--border-subtle);
     display: flex;
@@ -415,10 +427,25 @@ input:focus, select:focus, textarea:focus {
   .chat-container {
     height: calc(100vh - 120px) !important;
     border-radius: 0 !important;
-    margin: -20px !important;
-    width: calc(100% + 40px) !important;
+    margin: -12px !important;
+    width: calc(100% + 24px) !important;
     border: none !important;
   }
+
+  .mobile-only { display: block !important; }
+  .desktop-only { display: none !important; }
+  .full-width-mobile { width: 100% !important; justify-content: center !important; }
+  .mobile-hide { display: none !important; }
+  .mobile-show { display: flex !important; }
+
+  /* Profile Mobile Fixes */
+  .profile-header-card { padding: 16px !important; text-align: center; }
+  .mobile-column { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+  .profile-avatar { margin: 0 auto !important; width: 80px !important; height: 80px !important; font-size: 24px !important; }
+  .profile-stat-item { border: none !important; padding: 6px !important; width: 100% !important; }
+  .profile-name-row { flex-direction: column !important; align-items: center !important; gap: 12px !important; }
+  .profile-profession { justify-content: center !important; font-size: 14px !important; }
+  .profile-stat-grid { margin: 12px 0 !important; }
 }
 
 /* Desktop Only Sidebar Restoration */
@@ -430,4 +457,9 @@ input:focus, select:focus, textarea:focus {
   main {
     margin-left: var(--nav-width);
   }
+
+  .mobile-only { display: none !important; }
+  .desktop-only { display: block !important; }
+  .mobile-hide { display: flex !important; }
+  .mobile-show { display: flex !important; }
 }

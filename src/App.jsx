@@ -150,7 +150,7 @@ function App() {
         </>
       )}
       
-      <main style={{ marginLeft: '0' }}>
+      <main style={{ marginLeft: (user && view !== 'landing' && view !== 'auth') ? 'var(--nav-width)' : '0' }}>
         {view === 'landing' && <LandingPage />}
         {view === 'auth' && <Auth onComplete={(data) => {
           setUser(data)

@@ -57,22 +57,15 @@ function Directory({ onViewProfile, onStartChat }) {
 
       {/* Filter Bar Toggle (Mobile) */}
       <button 
-        className="btn-secondary" 
+        className="btn-secondary mobile-only full-width-mobile" 
         onClick={() => setShowFilters(!showFilters)}
-        style={{ display: 'none', marginBottom: '16px', width: '100%', justifyContent: 'center' }}
-        id="mobile-filter-toggle"
+        style={{ marginBottom: '16px' }}
       >
         <Filter size={16} /> {showFilters ? 'Hide Filters' : 'Show Filters'}
       </button>
-      <style>{`
-        @media (max-width: 1024px) {
-          #mobile-filter-toggle { display: flex !important; }
-          .directory-filters { display: ${showFilters ? 'flex' : 'none'} !important; }
-        }
-      `}</style>
 
       {/* Filter Bar */}
-      <div className="card directory-filters" style={{ marginBottom: '40px', padding: '16px' }}>
+      <div className={`card directory-filters ${showFilters ? 'mobile-show' : 'mobile-hide'}`} style={{ marginBottom: '40px', padding: '16px' }}>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', width: '100%' }}>
           <div style={{ flex: 2, minWidth: '200px', position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -161,10 +154,10 @@ function Directory({ onViewProfile, onStartChat }) {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                <button className="btn-primary" style={{ flex: 1 }} onClick={() => onStartChat(u)}>
+                <button className="btn-primary full-width-mobile" style={{ flex: 1 }} onClick={() => onStartChat(u)}>
                   <MessageCircle size={16} /> Message
                 </button>
-                <button className="btn-secondary" style={{ flex: 1 }} onClick={() => onViewProfile(u)}>
+                <button className="btn-secondary full-width-mobile" style={{ flex: 1 }} onClick={() => onViewProfile(u)}>
                   <UserIcon size={16} /> Profile
                 </button>
               </div>

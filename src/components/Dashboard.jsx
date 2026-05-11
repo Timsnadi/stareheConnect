@@ -69,13 +69,13 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
 
       {completionPercent < 100 && (
         <div className="card-elevated" style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--brand-green)', flexWrap: 'wrap', gap: '20px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1, minWidth: '280px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1, minWidth: '280px', flexWrap: 'wrap' }}>
             <div>
               <h3 className="card-title" style={{ marginBottom: '4px' }}>Complete your profile</h3>
               <p className="card-meta">Add your professional interests to get better mentor recommendations.</p>
             </div>
             
-            <div className="completion-bar-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            <div className="completion-bar-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
               <div className="completion-bar-track" style={{ flex: 1, height: '6px', background: 'rgba(15, 110, 86, 0.1)', borderRadius: '99px', overflow: 'hidden', maxWidth: '200px' }}>
                 <div
                   className="completion-bar-fill"
@@ -88,7 +88,7 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
             </div>
           </div>
           
-          <button className="btn-secondary" onClick={onUpdateProfile} style={{ width: '100%', maxWidth: 'none', justifyContent: 'center' }}>
+          <button className="btn-secondary full-width-mobile" onClick={onUpdateProfile}>
             Update Profile <ChevronRight size={16} />
           </button>
         </div>

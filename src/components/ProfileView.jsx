@@ -76,7 +76,7 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
           
           <div style={{ flex: 1, minWidth: '300px' }} className="profile-info-content">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }} className="profile-name-row">
-              <div>
+              <div className="profile-title-group">
                 <h1 className="page-title" style={{ fontSize: '32px' }}>{profile.name}</h1>
                 <p style={{ fontSize: '16px', color: 'var(--brand-green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }} className="profile-profession">
                   {isAlumnus ? <Briefcase size={16} /> : <Award size={16} />}
@@ -84,7 +84,7 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
                 </p>
               </div>
               {!isOwn && (
-                <button className="btn-primary" onClick={() => onStartChat(profile)}>
+                <button className="btn-primary full-width-mobile" onClick={() => onStartChat(profile)}>
                   <Mail size={16} /> Message
                 </button>
               )}
@@ -118,17 +118,6 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
           </div>
         </div>
       </div>
-      <style>{`
-        @media (max-width: 1024px) {
-          .profile-header-card { padding: 24px !important; text-align: center; }
-          .mobile-column { flex-direction: column !important; align-items: center !important; text-align: center !important; }
-          .profile-avatar { margin: 0 auto !important; }
-          .profile-stat-item { border: none !important; padding: 10px !important; width: 100% !important; }
-          .profile-name-row { flex-direction: column !important; align-items: center !important; gap: 16px !important; }
-          .profile-profession { justify-content: center !important; }
-          .profile-stat-grid { margin: 16px 0 !important; }
-        }
-      `}</style>
 
       <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '48px' }}>
         {/* Conditional Cards */}
