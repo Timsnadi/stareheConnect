@@ -20,6 +20,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/conversations', require('./routes/conversations'));
+app.use('/api/messages', require('./routes/messages'));
 
 // MongoDB Connection
 const PORT = process.env.PORT || 5000;
@@ -39,19 +41,42 @@ const connectDB = async () => {
 connectDB();
 
 // Socket.io Logic
+const onlineUsers = new Map();
+
 io.on('connection', (socket) => {
-  socket.on('join_room', (userId) => {
+  socket.on('join', ({ userId }) => {
+    socket.userId = userId;
     socket.join(userId);
-    console.log(`User ${userId} joined their personal room`);
+    onlineUsers.set(userId, socket.id);
+    console.log(`User ${userId} connected`);
+    
+    // Broadcast online status
+    io.emit('online_users', Array.from(onlineUsers.keys()));
+    io.emit('user_online', userId);
   });
 
   socket.on('send_message', (data) => {
-    // data: { senderId, receiverId, text, time }
+    // data: { _id, conversationId, senderId, senderName, content, receiverId, ... }
     io.to(data.receiverId).emit('receive_message', data);
   });
 
+  socket.on('typing', (data) => {
+    // data: { conversationId, userId, name }
+    const conv = data.conversationId;
+    socket.broadcast.emit('typing', data);
+  });
+
+  socket.on('stop_typing', (data) => {
+    socket.broadcast.emit('stop_typing', data);
+  });
+
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      io.emit('user_offline', socket.userId);
+      io.emit('online_users', Array.from(onlineUsers.keys()));
+      console.log(`User ${socket.userId} disconnected`);
+    }
   });
 });
 
