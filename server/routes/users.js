@@ -48,4 +48,21 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Update User Profile
+router.put('/:id', async (req, res) => {
+  try {
+    const { name, bio, profession, industry, location, clubs, roles } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: { name, bio, profession, industry, location, clubs, roles } },
+      { new: true }
+    ).select('-password');
+    
+    res.json(user);
+  } catch (err) {
+    console.error('Update User Error:', err);
+    res.status(500).json({ msg: 'Server Error' });
+  }
+});
+
 module.exports = router;

@@ -16,6 +16,7 @@ import Directory from './components/Directory'
 import ProfileView from './components/ProfileView'
 import ChatSystem from './components/ChatSystem'
 import AdminDashboard from './components/AdminDashboard'
+import ProfileEdit from './components/ProfileEdit'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -136,6 +137,8 @@ function App() {
             user={currentUser} 
             onViewProfile={(p) => { setSelectedProfile(p); setView('profile'); }} 
             onStartChat={(c) => { setActiveChat(c); setView('chats'); }}
+            onViewDirectory={() => setView('directory')}
+            onUpdateProfile={() => setView('edit-profile')}
           />
         )}
         {view === 'directory' && (
@@ -151,7 +154,18 @@ function App() {
             onBack={() => setView('dashboard')}
             onStartChat={(c) => { setActiveChat(c); setView('chats'); }}
             onLogout={handleSignOut}
-            onEdit={() => setView('auth')}
+            onEdit={() => setView('edit-profile')}
+          />
+        )}
+        {view === 'edit-profile' && currentUser && (
+          <ProfileEdit 
+            user={currentUser}
+            onComplete={(updated) => {
+              setUser(updated)
+              setSelectedProfile(updated.user || updated)
+              setView('profile')
+            }}
+            onCancel={() => setView('profile')}
           />
         )}
         {view === 'chats' && user && (

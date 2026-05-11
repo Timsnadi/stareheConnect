@@ -12,7 +12,7 @@ import {
 
 const API_URL = 'http://localhost:5000/api'
 
-function Dashboard({ user, onViewProfile, onStartChat }) {
+function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdateProfile }) {
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -61,7 +61,7 @@ function Dashboard({ user, onViewProfile, onStartChat }) {
               <p className="meta-text" style={{ fontSize: '13px' }}>Add your professional interests to get better mentor recommendations.</p>
             </div>
           </div>
-          <button className="btn btn-primary" style={{ padding: '10px 24px' }}>
+          <button className="btn btn-primary" style={{ padding: '10px 24px' }} onClick={onUpdateProfile}>
             Update Profile <ArrowRight size={16} />
           </button>
         </div>
@@ -73,7 +73,7 @@ function Dashboard({ user, onViewProfile, onStartChat }) {
             <Sparkles size={20} color="var(--accent)" />
             <h2 className="section-heading">Recommended Mentors</h2>
           </div>
-          <span className="meta-text" style={{ cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="meta-text" style={{ cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={onViewDirectory}>
             View all Starehians <ExternalLink size={12} />
           </span>
         </div>
@@ -86,7 +86,7 @@ function Dashboard({ user, onViewProfile, onStartChat }) {
               <div key={mentor._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '18px', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                    <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '18px' }}>
                       {mentor.name?.charAt(0)}
                     </div>
                     <div>

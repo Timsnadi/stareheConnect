@@ -37,7 +37,7 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
 
       <div className="card-elevated" style={{ padding: '40px', marginBottom: '32px', position: 'relative' }}>
         <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div className="avatar" style={{ width: '120px', height: '120px', fontSize: '48px', flexShrink: 0, background: 'var(--bg-main)', border: '2px solid var(--border)' }}>
+          <div className="avatar" style={{ width: '120px', height: '120px', fontSize: '40px', flexShrink: 0 }}>
             {profile.name?.charAt(0)}
           </div>
           

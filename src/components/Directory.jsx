@@ -107,7 +107,7 @@ function Directory({ onViewProfile, onStartChat }) {
             <div key={u._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  <div className="avatar" style={{ width: '56px', height: '56px', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                  <div className="avatar" style={{ width: '56px', height: '56px' }}>
                     {u.name?.charAt(0)}
                   </div>
                   <div>
