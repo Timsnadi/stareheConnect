@@ -2,36 +2,57 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { 
   Sparkles, 
-  UserCheck, 
-  ArrowRight, 
   MessageCircle, 
   User as UserIcon,
   Search,
-  ExternalLink
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react'
 
 const API_URL = 'http://localhost:5000/api'
 
+function getProfileCompletion(user) {
+  const fields = [
+    user.bio,
+    user.industry || user.profession,
+    user.location,
+    user.house,
+    user.role,
+    user.name
+  ];
+  const filled = fields.filter(Boolean).length;
+  return Math.round((filled / fields.length) * 100);
+}
+
 function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdateProfile }) {
   const [recommendations, setRecommendations] = useState([])
+  const [connections, setConnections] = useState([])
   const [loading, setLoading] = useState(true)
+  const [connLoading, setConnLoading] = useState(true)
+
+  const completionPercent = getProfileCompletion(user)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const matchRes = await axios.get(`${API_URL}/users/matches/${user.id || user._id}`)
+        const userId = user.id || user._id
+        const matchRes = await axios.get(`${API_URL}/users/matches/${userId}`)
         let data = matchRes.data
         
         if (data.length === 0) {
           const allRes = await axios.get(`${API_URL}/users`)
-          data = allRes.data.filter(u => u.role === 'alumnus' && (u._id !== user._id && u.id !== user.id)).slice(0, 6)
+          data = allRes.data.filter(u => u.role === 'alumnus' && (u._id !== userId && u.id !== userId)).slice(0, 6)
         }
-        
         setRecommendations(data)
+
+        // Fetch Connections
+        const connRes = await axios.get(`${API_URL}/users/${userId}/connections`)
+        setConnections(connRes.data)
       } catch (err) {
         console.error('Error fetching dashboard data:', err)
       } finally {
         setLoading(false)
+        setConnLoading(false)
       }
     }
     fetchDashboardData()
@@ -39,42 +60,52 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
 
   return (
     <div className="dashboard-content animate-fade-in">
-      <header style={{ marginBottom: '40px' }}>
-        <h1 className="page-title" style={{ marginBottom: '8px' }}>Welcome back, {user.name?.split(' ')[0]}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="meta-text">{user.house} House</span>
-          <span style={{ color: 'var(--border)' }}>•</span>
-          <span className="meta-text">{user.role === 'alumnus' ? 'Alumnus' : 'Student'}</span>
-          <span style={{ color: 'var(--border)' }}>•</span>
-          <span className="meta-text">Class of {user.yearLeft || user.yearJoined || '2024'}</span>
-        </div>
+      <header style={{ marginBottom: '32px' }}>
+        <h1 className="page-title">Welcome back, {user.name?.split(' ')[0]}</h1>
+        <p className="page-subtitle">
+          {user.house} House · {user.role === 'alumnus' ? 'Alumnus' : 'Student'} · Class of {user.yearLeft || user.yearJoined || '2024'}
+        </p>
       </header>
 
-      {!user.bio && (
-        <div className="card-elevated animate-fade-in" style={{ marginBottom: '40px', borderLeft: '4px solid var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <div style={{ padding: '10px', background: 'rgba(29, 158, 117, 0.1)', borderRadius: '10px' }}>
-              <UserCheck size={24} color="var(--primary)" />
-            </div>
+      {completionPercent < 100 && (
+        <div className="card-elevated" style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--brand-green)' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1 }}>
             <div>
-              <h3 style={{ marginBottom: '4px', fontSize: '16px' }}>Complete your profile</h3>
-              <p className="meta-text" style={{ fontSize: '13px' }}>Add your professional interests to get better mentor recommendations.</p>
+              <h3 className="card-title" style={{ marginBottom: '4px' }}>Complete your profile</h3>
+              <p className="card-meta">Add your professional interests to get better mentor recommendations.</p>
+            </div>
+            
+            <div className="completion-bar-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+              <div className="completion-bar-track" style={{ flex: 1, height: '6px', background: 'rgba(15, 110, 86, 0.1)', borderRadius: '99px', overflow: 'hidden', maxWidth: '200px' }}>
+                <div
+                  className="completion-bar-fill"
+                  style={{ width: `${completionPercent}%`, height: '100%', background: 'var(--brand-green)', borderRadius: '99px', transition: 'width 0.4s ease' }}
+                />
+              </div>
+              <span className="completion-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--brand-green)', whiteSpace: 'nowrap' }}>
+                {completionPercent}% complete
+              </span>
             </div>
           </div>
-          <button className="btn btn-primary" style={{ padding: '10px 24px' }} onClick={onUpdateProfile}>
-            Update Profile <ArrowRight size={16} />
+          
+          <button className="btn-secondary" onClick={onUpdateProfile}>
+            Update Profile <ChevronRight size={16} />
           </button>
         </div>
       )}
 
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '24px' }}>
+      <section className="dashboard-section" style={{ marginBottom: '48px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px' }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Sparkles size={20} color="var(--accent)" />
-            <h2 className="section-heading">Recommended Mentors</h2>
+            <Sparkles size={18} color="var(--accent)" />
+            <h2 className="section-heading" style={{ margin: 0 }}>Recommended Mentors</h2>
           </div>
-          <span className="meta-text" style={{ cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }} onClick={onViewDirectory}>
-            View all Starehians <ExternalLink size={12} />
+          <span 
+            className="meta-text" 
+            style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: 'var(--brand-green)', display: 'flex', alignItems: 'center', gap: '4px' }} 
+            onClick={onViewDirectory}
+          >
+            View full directory →
           </span>
         </div>
         
@@ -90,27 +121,27 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
                       {mentor.name?.charAt(0)}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '15px' }}>{mentor.name}</div>
-                      <div className="meta-text" style={{ fontSize: '12px' }}>{mentor.house} House · {mentor.role}</div>
+                      <h4 className="card-title">{mentor.name}</h4>
+                      <p className="card-meta">{mentor.house} House · {mentor.role}</p>
                     </div>
                   </div>
-                  <div className="badge badge-primary">Mentor</div>
+                  <span className="badge-role">Mentor</span>
                 </div>
 
-                <div style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: '12px' }}>
-                  <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--primary)', marginBottom: '4px' }}>
+                <div style={{ padding: '12px', background: 'var(--bg-page)', borderRadius: '12px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--brand-green)', marginBottom: '4px' }}>
                     {mentor.profession || 'Starehe Excellence'}
                   </div>
-                  <p className="body-text" style={{ fontSize: '13px', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <p className="card-meta" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     Interested in {mentor.clubs?.slice(0, 2).join(', ') || 'Leadership and Community Service'}.
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
-                  <button className="btn btn-primary" style={{ flex: 1, padding: '10px' }} onClick={() => onStartChat(mentor)}>
+                  <button className="btn-primary" style={{ flex: 1 }} onClick={() => onStartChat(mentor)}>
                     <MessageCircle size={16} /> Message
                   </button>
-                  <button className="btn btn-secondary" style={{ flex: 1, padding: '10px' }} onClick={() => onViewProfile(mentor)}>
+                  <button className="btn-secondary" style={{ flex: 1 }} onClick={() => onViewProfile(mentor)}>
                     <UserIcon size={16} /> Profile
                   </button>
                 </div>
@@ -118,6 +149,37 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
             ))
           )}
         </div>
+      </section>
+
+      <section className="dashboard-section">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+          <h2 className="section-heading" style={{ margin: 0 }}>Your Connections</h2>
+          <span style={{ fontSize: '11px', fontWeight: 700, background: 'var(--border)', color: 'var(--text-secondary)', padding: '1px 7px', borderRadius: '20px' }}>
+            {connections.length}
+          </span>
+        </div>
+
+        {connLoading ? (
+          <div className="card" style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p className="meta-text">Loading connections...</p>
+          </div>
+        ) : connections.length === 0 ? (
+          <p className="meta-text" style={{ padding: '16px 0', margin: 0 }}>
+            Connect with mentors from the directory to build your network.
+          </p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            {connections.map(c => (
+              <div key={c._id} className="card" onClick={() => onViewProfile(c)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', padding: '16px' }}>
+                <div className="avatar" style={{ width: '36px', height: '36px', fontSize: '14px' }}>{c.name?.charAt(0)}</div>
+                <div style={{ overflow: 'hidden' }}>
+                  <div className="card-title" style={{ fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                  <div className="card-meta" style={{ fontSize: '11px' }}>{c.house} House</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )

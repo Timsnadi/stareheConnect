@@ -7,8 +7,7 @@ import {
   User as UserIcon, 
   MapPin, 
   Briefcase, 
-  GraduationCap,
-  ChevronDown
+  GraduationCap
 } from 'lucide-react'
 
 const API_URL = 'http://localhost:5000/api'
@@ -49,9 +48,9 @@ function Directory({ onViewProfile, onStartChat }) {
 
   return (
     <div className="directory-content animate-fade-in">
-      <header style={{ marginBottom: '40px' }}>
-        <h1 className="page-title" style={{ marginBottom: '8px' }}>Starehian Directory</h1>
-        <p className="meta-text">Connect with alumni and students across generations.</p>
+      <header style={{ marginBottom: '32px' }}>
+        <h1 className="page-title">Starehian Directory</h1>
+        <p className="page-subtitle">Connect with alumni and students across generations.</p>
       </header>
 
       {/* Filter Bar */}
@@ -63,16 +62,14 @@ function Directory({ onViewProfile, onStartChat }) {
               placeholder="Search by name or keyword..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="body-text"
-              style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)' }}
+              style={{ paddingLeft: '48px' }}
             />
           </div>
           
           <div style={{ flex: 1, minWidth: '150px', position: 'relative' }}>
             <Filter size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <select 
-              className="body-text" 
-              style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+              style={{ paddingLeft: '36px' }}
               value={filters.role}
               onChange={(e) => setFilters({...filters, role: e.target.value})}
             >
@@ -85,8 +82,7 @@ function Directory({ onViewProfile, onStartChat }) {
           <div style={{ flex: 1, minWidth: '150px', position: 'relative' }}>
             <GraduationCap size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <select 
-              className="body-text" 
-              style={{ width: '100%', padding: '12px 12px 12px 36px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+              style={{ paddingLeft: '36px' }}
               value={filters.house}
               onChange={(e) => setFilters({...filters, house: e.target.value})}
             >
@@ -104,49 +100,53 @@ function Directory({ onViewProfile, onStartChat }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
           {filteredUsers.map(u => (
-            <div key={u._id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div key={u._id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                   <div className="avatar" style={{ width: '56px', height: '56px' }}>
                     {u.name?.charAt(0)}
                   </div>
                   <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700 }}>{u.name}</h3>
+                    <h3 className="card-title">{u.name}</h3>
                     <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                      <span className="badge badge-primary">{u.house}</span>
-                      <span className="badge badge-secondary" style={{ background: u.role === 'alumnus' ? 'rgba(29, 158, 117, 0.1)' : 'rgba(237, 73, 86, 0.1)', color: u.role === 'alumnus' ? 'var(--primary)' : 'var(--secondary)' }}>
-                        {u.role}
-                      </span>
+                      <span className="badge-house">{u.house}</span>
+                      <span className="badge-role">{u.role}</span>
                     </div>
                   </div>
                 </div>
+                {u.role === 'alumnus' && u.mentorshipOpen && (
+                  <span style={{ 
+                    display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '20px', 
+                    fontSize: '10px', fontWeight: 600, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' 
+                  }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
+                    Open to Mentoring
+                  </span>
+                )}
               </div>
 
-              <div style={{ padding: '16px', background: 'var(--bg-main)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ 
+                minHeight: '56px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', 
+                padding: '8px 12px', background: 'var(--bg-page)', borderRadius: '12px', marginBottom: '20px' 
+              }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <Briefcase size={14} color="var(--primary)" />
+                  <Briefcase size={14} color="var(--brand-green)" />
                   <div>
-                    <div className="meta-text" style={{ fontSize: '10px', textTransform: 'uppercase' }}>
+                    <div className="section-heading" style={{ fontSize: '9px', margin: 0 }}>
                       {u.role === 'alumnus' ? 'Industry / Profession' : 'Class Stream'}
                     </div>
-                    <div style={{ fontWeight: 600, fontSize: '13px' }}>
+                    <div className="card-title" style={{ fontSize: '13px' }}>
                       {u.role === 'alumnus' ? (u.profession || 'Education') : `Stream ${u.stream}`}
                     </div>
                   </div>
                 </div>
-                {u.location && (
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <MapPin size={14} color="var(--text-muted)" />
-                    <div className="meta-text" style={{ fontSize: '13px' }}>{u.location}</div>
-                  </div>
-                )}
               </div>
 
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => onStartChat(u)}>
+              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                <button className="btn-primary" style={{ flex: 1 }} onClick={() => onStartChat(u)}>
                   <MessageCircle size={16} /> Message
                 </button>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => onViewProfile(u)}>
+                <button className="btn-secondary" style={{ flex: 1 }} onClick={() => onViewProfile(u)}>
                   <UserIcon size={16} /> Profile
                 </button>
               </div>

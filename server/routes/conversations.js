@@ -69,4 +69,20 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+const Message = require('../models/Message');
+
+// Get messages for a conversation
+router.get('/messages/:id', auth, async (req, res) => {
+  try {
+    const messages = await Message.find({
+      conversationId: req.params.id
+    }).sort({ createdAt: 1 });
+    
+    res.json(messages);
+  } catch (err) {
+    console.error('Messages Fetch Error:', err);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;

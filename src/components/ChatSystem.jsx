@@ -1,47 +1,37 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { io } from "socket.io-client";
+import React, { useState, useEffect, useRef, useMemo } from 'react'
+import axios from 'axios'
+import io from 'socket.io-client'
 import { 
-  Search, 
   Send, 
-  Trash2, 
+  Search, 
   MoreVertical, 
+  Trash2, 
+  X,
   MessageSquare,
   ArrowLeft
-} from 'lucide-react';
+} from 'lucide-react'
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+const API_URL = 'http://localhost:5000/api'
+const SOCKET_URL = 'http://localhost:5000'
 
-function getInitials(name = "") {
-  return name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function formatTime(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-function formatTime(ts) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function getInitials(name) {
+  if (!name) return '?'
+  return name.split(' ').map(n => n[0]).join('').toUpperCase()
 }
 
-function formatDate(ts) {
-  const d = new Date(ts);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString([], { day: "numeric", month: "short" });
-}
-
-function groupByDate(messages) {
-  const groups = [];
-  let lastDate = null;
-  messages.forEach((msg) => {
-    const dateLabel = formatDate(msg.createdAt || msg.timestamp || Date.now());
-    if (dateLabel !== lastDate) {
-      groups.push({ type: "divider", label: dateLabel });
-      lastDate = dateLabel;
-    }
-    groups.push({ type: "message", ...msg });
+function groupMessagesByDate(messages) {
+  const groups = {}
+  messages.forEach(m => {
+    const date = new Date(m.createdAt).toLocaleDateString()
+    if (!groups[date]) groups[date] = []
+    groups[date].push(m)
   });
   return groups;
 }
@@ -54,269 +44,307 @@ function Avatar({ name, size = 40, online = false }) {
         {getInitials(name)}
       </div>
       {online && (
-        <span style={{ position: "absolute", bottom: 0, right: 0, width: size * 0.25, height: size * 0.25, borderRadius: "50%", background: "#1D9E75", border: "2px solid var(--bg-card)" }} />
+        <span style={{ position: "absolute", bottom: 0, right: 0, width: size * 0.25, height: size * 0.25, borderRadius: "50%", background: "#1D9E75", border: "2px solid var(--bg-surface)" }} />
       )}
     </div>
   );
 }
 
-// ── Main ChatSystem ───────────────────────────────────────────────────────────
-export default function ChatSystem({ user: userData, initialTarget, onBack }) {
-  const user = {
-    _id: userData?.user?.id || userData?.id || "demo-user",
-    fullName: userData?.user?.name || userData?.name || "User",
-    token: userData?.token || null,
-  };
+// ── ChatSystem Component ───────────────────────────────────────────────────────
+function ChatSystem({ user, initialTarget, onBack }) {
+  const [conversations, setConversations] = useState([])
+  const [activeConversation, setActiveConversation] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [inputText, setInputText] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [socket, setSocket] = useState(null)
+  
+  const messagesEndRef = useRef(null)
+  const lastTargetIdRef = useRef(null)
 
-  const [conversations, setConversations] = useState([]);
-  const [activeConvId, setActiveConvId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const authToken = user?.token
+  const currentUserData = user?.user || user
+  const currentUserId = currentUserData?.id || currentUserData?._id
 
-  const socketRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-  const setupRef = useRef(null); // To prevent double-init in Strict Mode
+  const config = useMemo(() => ({
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  }), [authToken])
 
-  const activeConv = conversations.find((c) => c._id === activeConvId);
-  const otherUser = activeConv?.participants?.find((p) => p._id !== user._id) || {};
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   useEffect(() => {
-    if (user.token) fetchConversations();
-  }, [user.token]);
+    scrollToBottom()
+  }, [messages])
 
-  // Handle Initial Target from Directory
-  useEffect(() => {
-    if (initialTarget && user.token && setupRef.current !== initialTarget._id) {
-      setupRef.current = initialTarget._id || initialTarget.id;
-      const setup = async () => {
-        try {
-          const res = await fetch(`${API_BASE}/api/conversations`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` },
-            body: JSON.stringify({ participantId: initialTarget._id || initialTarget.id }),
-          });
-          const conv = await res.json();
-          if (conv._id) {
-            setConversations(prev => {
-              if (prev.some(c => c._id === conv._id)) return prev;
-              return [conv, ...prev];
-            });
-            setActiveConvId(conv._id);
-          }
-        } catch (err) { 
-          console.error(err); 
-          setupRef.current = null;
-        }
-      };
-      setup();
+  const fetchMessages = async (conversationId) => {
+    try {
+      const res = await axios.get(`${API_URL}/messages/${conversationId}`, config)
+      setMessages(res.data)
+    } catch (err) {
+      console.error('Error fetching messages:', err)
     }
-  }, [initialTarget, user.token]);
+  }
 
+  // Socket setup
   useEffect(() => {
-    if (activeConvId && user.token) fetchMessages(activeConvId);
-  }, [activeConvId]);
+    if (!currentUserId) return
+    const newSocket = io(SOCKET_URL)
+    setSocket(newSocket)
+    
+    newSocket.emit('join', { userId: currentUserId })
+    
+    newSocket.on('receive_message', (message) => {
+      // Add message if it's for the current conversation
+      if (activeConversation?._id === message.conversationId) {
+        setMessages(prev => [...prev, message])
+      }
+      
+      // Update sidebar preview
+      setConversations(prev => prev.map(c => 
+        c._id === message.conversationId 
+        ? { ...c, lastMessage: { content: message.content, createdAt: message.createdAt, senderId: message.senderId } }
+        : c
+      ).sort((a, b) => {
+        const aDate = a.lastMessage?.createdAt || 0
+        const bDate = b.lastMessage?.createdAt || 0
+        return new Date(bDate) - new Date(aDate)
+      }))
+    })
 
+    return () => newSocket.disconnect()
+  }, [currentUserId, activeConversation?._id])
+
+  // Initial Data Load
   useEffect(() => {
-    if (!user.token) return;
-    const socket = io(SOCKET_URL, { auth: { token: user.token } });
-    socketRef.current = socket;
-    socket.on("connect", () => socket.emit("join", { userId: user._id }));
-    socket.on("online_users", (ids) => setOnlineUsers(new Set(ids)));
-    socket.on("receive_message", (msg) => {
-      if (msg.conversationId === activeConvId) setMessages((prev) => [...prev, msg]);
-      setConversations((prev) => prev.map((c) => c._id === msg.conversationId ? { ...c, lastMessage: msg } : c));
-    });
-    socket.on("message_deleted", ({ messageId }) => {
-      setMessages(prev => prev.filter(m => m._id !== messageId));
-    });
-    return () => socket.disconnect();
-  }, [user.token, user._id, activeConvId]);
+    const initializeChat = async () => {
+      if (!authToken) return
+      
+      const targetId = initialTarget?._id || initialTarget?.id;
+      if (targetId && lastTargetIdRef.current === targetId) return;
+      lastTargetIdRef.current = targetId;
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+      try {
+        const res = await axios.get(`${API_URL}/conversations`, config)
+        setConversations(res.data)
 
-  const fetchConversations = async () => {
+        if (initialTarget) {
+          let existing = res.data.find(c => c.participants.some(p => p._id === targetId))
+          
+          if (!existing) {
+            const startRes = await axios.post(`${API_URL}/conversations`, {
+              participantId: targetId
+            }, config)
+            existing = startRes.data
+            setConversations(prev => [existing, ...prev])
+          }
+          setActiveConversation(existing)
+          fetchMessages(existing._id)
+        }
+      } catch (err) {
+        console.error('Chat init error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    initializeChat()
+  }, [currentUserId, initialTarget, config, authToken])
+
+  const sendMessage = async () => {
+    if (!inputText.trim() || !activeConversation) return
     try {
-      const res = await fetch(`${API_BASE}/api/conversations`, { headers: { Authorization: `Bearer ${user.token}` } });
-      const data = await res.json();
-      const unique = data.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i);
-      setConversations(unique);
-    } catch (err) { console.error(err); }
-  };
+      // 1. Save to DB
+      const res = await axios.post(`${API_URL}/messages`, {
+        conversationId: activeConversation._id,
+        content: inputText
+      }, config)
+      
+      const savedMsg = res.data
+      
+      // 2. Add to local state
+      setMessages(prev => [...prev, savedMsg])
+      
+      // 3. Emit via socket
+      const otherUser = activeConversation.participants.find(p => p._id !== currentUserId)
+      socket.emit('send_message', {
+        ...savedMsg,
+        receiverId: otherUser?._id
+      })
+      
+      setInputText('')
+      scrollToBottom()
+    } catch (err) {
+      console.error('Send error:', err)
+    }
+  }
 
-  const fetchMessages = async (convId) => {
-    setIsLoadingMsgs(true);
+  const deleteConversation = async (id) => {
+    if (!window.confirm('Delete this entire conversation?')) return
     try {
-      const res = await fetch(`${API_BASE}/api/messages/${convId}`, { headers: { Authorization: `Bearer ${user.token}` } });
-      const data = await res.json();
-      setMessages(data);
-    } catch (err) { console.error(err); } finally { setIsLoadingMsgs(false); }
-  };
+      await axios.delete(`${API_URL}/conversations/${id}`, config)
+      setConversations(prev => prev.filter(c => c._id !== id))
+      if (activeConversation?._id === id) {
+        setActiveConversation(null)
+        setMessages([])
+      }
+    } catch (err) {
+      console.error('Delete conv error:', err)
+    }
+  }
 
-  const sendMessage = useCallback(async () => {
-    const text = inputText.trim();
-    if (!text || !activeConvId || !user.token) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${user.token}` },
-        body: JSON.stringify({ conversationId: activeConvId, content: text }),
-      });
-      const saved = await res.json();
-      setMessages((prev) => [...prev, saved]);
-      setInputText("");
-      socketRef.current?.emit("send_message", { ...saved, receiverId: otherUser._id });
-    } catch (err) { console.error(err); }
-  }, [inputText, activeConvId, user, otherUser]);
+  const filteredConversations = conversations.filter(c => {
+    const other = c.participants.find(p => p._id !== currentUserId)
+    return other?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  })
 
-  const unsendMessage = async (msgId) => {
-    if (!window.confirm("Unsend this message?")) return;
-    try {
-      await fetch(`${API_BASE}/api/messages/${msgId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setMessages(prev => prev.filter(m => m._id !== msgId));
-      socketRef.current?.emit("delete_message", { messageId: msgId, receiverId: otherUser._id });
-    } catch (err) { console.error(err); }
-  };
-
-  const deleteConversation = async (e, convId) => {
-    e.stopPropagation();
-    if (!window.confirm("Delete this entire conversation?")) return;
-    try {
-      await fetch(`${API_BASE}/api/conversations/${convId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setConversations(prev => prev.filter(c => c._id !== convId));
-      if (activeConvId === convId) setActiveConvId(null);
-    } catch (err) { console.error(err); }
-  };
-
-  const filteredConvs = conversations.filter((c) => {
-    const other = c.participants?.find((p) => p._id !== user._id);
-    return (other?.fullName || other?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const groupedMessages = useMemo(() => groupMessagesByDate(messages), [messages])
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 96px)', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-      <div style={{ width: '320px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
-          <h2 className="section-heading" style={{ marginBottom: '16px' }}>Messages</h2>
-          <div style={{ position: 'relative' }}>
-            <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+    <div className="chat-container animate-fade-in" style={{ height: 'calc(100vh - 80px)', display: 'flex', background: 'var(--bg-surface)', borderRadius: '16px', overflow: 'hidden', border: 'var(--border-subtle)' }}>
+      {/* ── Conversation List ── */}
+      <div style={{ width: '320px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface-elevated)' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
+          <h2 className="section-heading">Messages</h2>
+          <div style={{ position: 'relative', marginTop: '16px' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               placeholder="Search chats..." 
-              className="body-text"
-              style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-main)' }}
+              style={{ paddingLeft: '36px', background: 'var(--bg-page)', border: 'none' }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
+
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {filteredConvs.map(conv => {
-            const other = conv.participants?.find(p => p._id !== user._id) || {};
-            const active = conv._id === activeConvId;
+          {filteredConversations.map(conv => {
+            const otherUser = conv.participants.find(p => p._id !== currentUserId)
+            const isActive = activeConversation?._id === conv._id
+            const preview = conv.lastMessage
+              ? conv.lastMessage.content.slice(0, 45) + (conv.lastMessage.content.length > 45 ? '…' : '')
+              : '';
+            
             return (
               <div 
-                key={conv._id} 
-                onClick={() => setActiveConvId(conv._id)}
-                className="conv-item"
-                style={{ padding: '16px', cursor: 'pointer', background: active ? 'var(--bg-elevated)' : 'transparent', borderLeft: active ? '4px solid var(--primary)' : '4px solid transparent', display: 'flex', gap: '12px', alignItems: 'center', position: 'relative' }}
+                key={conv._id}
+                onClick={() => { setActiveConversation(conv); fetchMessages(conv._id); }}
+                style={{ 
+                  padding: '16px 24px', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  gap: '12px', 
+                  alignItems: 'center',
+                  background: isActive ? 'rgba(15, 110, 86, 0.08)' : 'transparent',
+                  borderLeft: isActive ? '4px solid var(--brand-green)' : '4px solid transparent',
+                  transition: 'all 0.2s'
+                }}
               >
-                <Avatar name={other.fullName || other.name} size={40} online={onlineUsers.has(other._id)} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{other.fullName || other.name}</div>
-                    <div className="meta-text" style={{ fontSize: '10px' }}>{conv.lastMessage?.createdAt && formatTime(conv.lastMessage.createdAt)}</div>
+                <Avatar name={otherUser?.name} size={44} />
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <h4 className="card-title" style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{otherUser?.name}</h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                      {conv.lastMessage ? formatTime(conv.lastMessage.createdAt) : ''}
+                    </span>
                   </div>
-                  <div className="meta-text" style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {conv.lastMessage?.content || 'Start a conversation'}
-                  </div>
-                </div>
-                <div className="delete-chat" onClick={(e) => deleteConversation(e, conv._id)} style={{ position: 'absolute', right: '12px', opacity: 0, transition: '0.2s', padding: '4px' }}>
-                  <Trash2 size={14} color="var(--secondary)" />
+                  <p className="card-meta" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                    {preview}
+                  </p>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
       </div>
 
-      <style>{`
-        .conv-item:hover .delete-chat { opacity: 0.8 !important; }
-        .delete-chat:hover { opacity: 1 !important; transform: scale(1.1); }
-        .msg-bubble:hover .unsend-btn { opacity: 1 !important; }
-      `}</style>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {activeConv ? (
+      {/* ── Chat Window ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-page)' }}>
+        {activeConversation ? (
           <>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Avatar name={otherUser.fullName || otherUser.name} size={40} online={onlineUsers.has(otherUser._id)} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700 }}>{otherUser.fullName || otherUser.name}</div>
-                <div className="meta-text" style={{ fontSize: '12px' }}>{onlineUsers.has(otherUser._id) ? 'Online' : 'Offline'}</div>
-              </div>
-            </div>
-            
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {groupByDate(messages).map((item, idx) => {
-                if (item.type === 'divider') return <div key={idx} style={{ textAlign: 'center', margin: '20px 0' }}><span className="meta-text" style={{ padding: '4px 12px', background: 'var(--bg-main)', borderRadius: '20px' }}>{item.label}</span></div>;
-                const isMine = item.senderId === user._id;
-                return (
-                  <div key={item._id} className="msg-bubble" style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', maxWidth: '70%', position: 'relative' }}>
-                    <div style={{ padding: '10px 16px', borderRadius: '12px', background: isMine ? 'var(--primary)' : 'var(--bg-elevated)', color: isMine ? 'white' : 'var(--text-main)', fontSize: '14px' }}>
-                      {item.content}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                      <div className="meta-text" style={{ fontSize: '10px' }}>
-                        {formatTime(item.createdAt)}
-                      </div>
-                      {isMine && <span className="unsend-btn" onClick={() => unsendMessage(item._id)} style={{ fontSize: '10px', cursor: 'pointer', opacity: 0, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        <Trash2 size={10} /> Unsend
-                      </span>}
-                    </div>
+            <div style={{ padding: '16px 24px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <Avatar name={activeConversation.participants.find(p => p._id !== currentUserId)?.name} online={true} />
+                <div>
+                  <h3 className="card-title">{activeConversation.participants.find(p => p._id !== currentUserId)?.name}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1D9E75' }} />
+                    <span className="card-meta">Online</span>
                   </div>
-                );
-              })}
+                </div>
+              </div>
+              <button className="btn-secondary" style={{ padding: '8px' }} onClick={() => deleteConversation(activeConversation._id)}>
+                <Trash2 size={18} color="var(--secondary)" />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {Object.entries(groupedMessages).map(([date, msgs]) => (
+                <div key={date}>
+                  <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', background: 'var(--bg-surface)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      {date}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {msgs.map(m => {
+                      const isMe = m.senderId === currentUserId
+                      return (
+                        <div key={m._id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+                          <div style={{ 
+                            padding: '12px 16px', 
+                            borderRadius: isMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                            background: isMe ? 'var(--brand-green)' : 'var(--bg-surface)',
+                            color: isMe ? 'white' : 'var(--text-primary)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                            border: isMe ? 'none' : '1px solid var(--border)'
+                          }}>
+                            <p style={{ fontSize: '14px', margin: 0 }}>{m.content}</p>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', textAlign: isMe ? 'right' : 'left' }}>
+                            {formatTime(m.createdAt || m.timestamp)}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
               <div ref={messagesEndRef} />
             </div>
 
-            <div style={{ padding: '20px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '24px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <input 
-                  ref={inputRef}
                   placeholder="Type a message..." 
-                  className="body-text"
-                  style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-main)' }}
+                  style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-page)', border: '1px solid var(--border)' }}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 />
-                <button className="btn btn-primary" onClick={sendMessage} style={{ padding: '12px 24px' }}>
+                <button className="btn-primary" onClick={sendMessage} style={{ padding: '12px 24px' }}>
                   <Send size={18} />
                 </button>
               </div>
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ padding: '24px', borderRadius: '50%', background: 'var(--bg-elevated)', marginBottom: '24px' }}>
-              <MessageSquare size={48} strokeWidth={1.5} />
-            </div>
-            <h3 className="section-heading">Your Messages</h3>
-            <p className="meta-text">Select a conversation to start chatting</p>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '40px', opacity: 0.7 }}>
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="8" width="28" height="20" rx="4" stroke="#d1d5db" strokeWidth="1.5" fill="none"/>
+              <path d="M12 28l-4 4v-4" stroke="#d1d5db" strokeWidth="1.5" strokeLinejoin="round" fill="none"/>
+              <circle cx="14" cy="18" r="1.5" fill="#d1d5db"/>
+              <circle cx="20" cy="18" r="1.5" fill="#d1d5db"/>
+              <circle cx="26" cy="18" r="1.5" fill="#d1d5db"/>
+            </svg>
+            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)', margin: 0 }}>Select a conversation</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, textAlign: 'center' }}>Choose someone from the list to start chatting</p>
           </div>
         )}
       </div>
     </div>
   );
 }
+
+export default ChatSystem

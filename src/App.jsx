@@ -57,52 +57,52 @@ function App() {
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <Shield size={32} color="var(--primary)" strokeWidth={2.5} />
-          <span className="logo-font" style={{ fontSize: '1.4rem' }}>StareheConnect</span>
+          <Shield size={28} color="var(--brand-green)" strokeWidth={2.5} />
+          <span className="logo-font" style={{ fontSize: '1.25rem' }}>StareheConnect</span>
         </div>
         
         {currentUser && (
-          <div className="sidebar-user" onClick={() => { setSelectedProfile(currentUser); setView('profile'); }} style={{ cursor: 'pointer' }}>
-            <div className="avatar">{currentUser.name?.charAt(0)}</div>
+          <div className="sidebar-user" onClick={() => { setSelectedProfile(currentUser); setView('profile'); }} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--bg-page)', borderRadius: '12px', marginBottom: '12px' }}>
+            <div className="avatar" style={{ width: '36px', height: '36px', fontSize: '14px' }}>{currentUser.name?.charAt(0)}</div>
             <div className="sidebar-user-info">
-              <div style={{ fontWeight: 600, fontSize: '14px' }}>{currentUser.name?.split(' ')[0]}</div>
-              <div className="badge badge-primary" style={{ fontSize: '9px', padding: '2px 6px', marginTop: '4px' }}>
-                {currentUser.house} House
+              <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>{currentUser.name?.split(' ')[0]}</div>
+              <div className="badge-house" style={{ fontSize: '8px', padding: '1px 6px', marginTop: '2px' }}>
+                {currentUser.house}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="sidebar-nav">
-        <div className="nav-label">Main Menu</div>
-        <div className={`sidebar-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
+      <div className="sidebar-nav" style={{ flex: 1, overflowY: 'auto' }}>
+        <span className="sidebar-section-label">Main Menu</span>
+        <div className={`nav-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
           <Home size={18} /> <span>Home</span>
         </div>
-        <div className={`sidebar-item ${view === 'directory' ? 'active' : ''}`} onClick={() => setView('directory')}>
+        <div className={`nav-item ${view === 'directory' ? 'active' : ''}`} onClick={() => setView('directory')}>
           <Users size={18} /> <span>Directory</span>
         </div>
-        <div className={`sidebar-item ${view === 'chats' ? 'active' : ''}`} onClick={() => setView('chats')}>
+        <div className={`nav-item ${view === 'chats' ? 'active' : ''}`} onClick={() => setView('chats')}>
           <Mail size={18} /> <span>Messages</span>
         </div>
 
-        <div className="nav-label">Account</div>
-        <div className={`sidebar-item ${view === 'profile' && selectedProfile?._id === currentUser?._id ? 'active' : ''}`} onClick={() => { setSelectedProfile(currentUser); setView('profile'); }}>
+        <span className="sidebar-section-label">Account</span>
+        <div className={`nav-item ${view === 'profile' && selectedProfile?._id === currentUser?._id ? 'active' : ''}`} onClick={() => { setSelectedProfile(currentUser); setView('profile'); }}>
           <UserIcon size={18} /> <span>My Profile</span>
         </div>
         { (currentUser?.role === 'admin') && (
-          <div className={`sidebar-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
-            <Settings size={18} /> <span>Admin</span>
+          <div className={`nav-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
+            <Settings size={18} /> <span>Admin Panel</span>
           </div>
         )}
       </div>
 
-      <div className="sidebar-nav" style={{ flexGrow: 0, marginBottom: '24px' }}>
-        <div className="sidebar-item" onClick={toggleTheme}>
+      <div className="sidebar-footer" style={{ borderTop: 'var(--border-subtle)', padding: '12px 0' }}>
+        <div className="nav-item" onClick={toggleTheme}>
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} 
           <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </div>
-        <div className="sidebar-item" onClick={handleSignOut} style={{ color: 'var(--secondary)' }}>
+        <div className="nav-item" onClick={handleSignOut} style={{ color: 'var(--secondary)' }}>
           <LogOut size={18} /> <span>Sign Out</span>
         </div>
       </div>
@@ -110,13 +110,13 @@ function App() {
   )
 
   const LandingPage = () => (
-    <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px', background: 'var(--bg-main)' }}>
-      <Shield size={120} color="var(--primary)" style={{ marginBottom: '32px' }} strokeWidth={1.5} />
-      <h1 className="page-title" style={{ fontSize: '4rem', marginBottom: '16px' }}>StareheConnect</h1>
-      <p className="body-text" style={{ marginBottom: '40px', fontSize: '1.2rem', maxWidth: '600px', color: 'var(--text-muted)' }}>
+    <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px', background: 'var(--bg-page)' }}>
+      <Shield size={100} color="var(--brand-green)" style={{ marginBottom: '32px' }} strokeWidth={1.5} />
+      <h1 className="page-title" style={{ fontSize: '3.5rem', marginBottom: '16px' }}>StareheConnect</h1>
+      <p className="page-subtitle" style={{ fontSize: '1.1rem', maxWidth: '600px' }}>
         The official mentorship and professional networking platform for the Starehe Boys' Centre community.
       </p>
-      <button className="btn btn-primary" style={{ padding: '16px 48px', fontSize: '1.1rem' }} onClick={() => setView('auth')}>Get Started</button>
+      <button className="btn-primary" style={{ padding: '14px 40px', fontSize: '1rem' }} onClick={() => setView('auth')}>Get Started</button>
     </div>
   )
 

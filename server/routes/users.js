@@ -65,4 +65,33 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+const Conversation = require('../models/Conversation');
+
+// Get Connections (Users you have messaged)
+router.get('/:id/connections', async (req, res) => {
+  try {
+    const convs = await Conversation.find({ 
+      participants: req.params.id 
+    }).populate('participants', '-password');
+    
+    // Extract unique participants that are NOT the user themselves
+    const connections = [];
+    const seen = new Set();
+    
+    convs.forEach(c => {
+      c.participants.forEach(p => {
+        if (p._id.toString() !== req.params.id && !seen.has(p._id.toString())) {
+          connections.push(p);
+          seen.add(p._id.toString());
+        }
+      });
+    });
+    
+    res.json(connections);
+  } catch (err) {
+    console.error('Connections error:', err);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;
