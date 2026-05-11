@@ -43,4 +43,22 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// Unsend/Delete a message
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message) return res.status(404).json({ msg: 'Message not found' });
+
+    // Only sender can delete
+    if (message.senderId.toString() !== req.user.id) {
+      return res.status(401).json({ msg: 'Unauthorized' });
+    }
+
+    await Message.findByIdAndDelete(req.params.id);
+    res.json({ msg: 'Message deleted' });
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;
