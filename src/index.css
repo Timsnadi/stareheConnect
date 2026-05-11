@@ -215,6 +215,15 @@ body {
   transition: var(--transition);
 }
 
+.chat-container {
+  height: calc(100vh - 80px);
+  display: flex;
+  background: var(--bg-surface);
+  border-radius: 16px;
+  overflow: hidden;
+  border: var(--border-subtle);
+}
+
 .card-elevated {
   background: var(--bg-surface-elevated);
   border: var(--border-subtle);
@@ -345,8 +354,8 @@ input:focus, select:focus, textarea:focus {
   }
 
   main {
-    padding: 12px;
-    padding-bottom: 80px; /* Space for bottom nav */
+    padding: 8px;
+    padding-bottom: 70px; /* Space for bottom nav */
   }
 
   .sidebar {
@@ -354,23 +363,23 @@ input:focus, select:focus, textarea:focus {
   }
 
   .page-title {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .card-elevated, .card {
-    padding: 12px;
+    padding: 10px;
   }
 
   .section-heading {
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .card-title {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .card-meta {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   /* Bottom Navigation */
@@ -379,7 +388,7 @@ input:focus, select:focus, textarea:focus {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: 56px;
     background: var(--bg-surface);
     border-top: var(--border-subtle);
     display: flex;
@@ -394,12 +403,17 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     color: var(--text-secondary);
     text-decoration: none;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 500;
     flex: 1;
+  }
+
+  .mobile-nav-item svg {
+    width: 18px;
+    height: 18px;
   }
 
   .mobile-nav-item.active {
@@ -410,7 +424,7 @@ input:focus, select:focus, textarea:focus {
   .mobile-stack {
     display: flex !important;
     flex-direction: column !important;
-    gap: 16px !important;
+    gap: 12px !important;
   }
 
   /* Form Zoom Prevention */
@@ -420,15 +434,15 @@ input:focus, select:focus, textarea:focus {
 
   /* Large Touch Targets */
   .btn-primary, .btn-secondary, button {
-    min-height: 44px;
+    min-height: 40px;
   }
 
   /* Chat Mobile Adjustments */
   .chat-container {
-    height: calc(100vh - 120px) !important;
+    height: calc(100vh - 100px) !important;
     border-radius: 0 !important;
-    margin: -12px !important;
-    width: calc(100% + 24px) !important;
+    margin: -8px !important;
+    width: calc(100% + 16px) !important;
     border: none !important;
   }
 
@@ -439,13 +453,13 @@ input:focus, select:focus, textarea:focus {
   .mobile-show { display: flex !important; }
 
   /* Profile Mobile Fixes */
-  .profile-header-card { padding: 16px !important; text-align: center; }
+  .profile-header-card { padding: 12px !important; text-align: center; }
   .mobile-column { flex-direction: column !important; align-items: center !important; text-align: center !important; }
-  .profile-avatar { margin: 0 auto !important; width: 80px !important; height: 80px !important; font-size: 24px !important; }
-  .profile-stat-item { border: none !important; padding: 6px !important; width: 100% !important; }
-  .profile-name-row { flex-direction: column !important; align-items: center !important; gap: 12px !important; }
-  .profile-profession { justify-content: center !important; font-size: 14px !important; }
-  .profile-stat-grid { margin: 12px 0 !important; }
+  .profile-avatar { margin: 0 auto !important; width: 64px !important; height: 64px !important; font-size: 20px !important; }
+  .profile-stat-item { padding: 4px !important; }
+  .profile-name-row { gap: 8px !important; }
+  .profile-profession { font-size: 13px !important; }
+  .profile-stat-grid { margin: 8px 0 !important; gap: 4px !important; }
 }
 
 /* Desktop Only Sidebar Restoration */

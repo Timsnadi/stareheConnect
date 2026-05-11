@@ -68,48 +68,48 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
       </header>
 
       {completionPercent < 100 && (
-        <div className="card-elevated" style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--brand-green)', flexWrap: 'wrap', gap: '20px' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1, minWidth: '280px', flexWrap: 'wrap' }}>
+        <div className="card-elevated" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--brand-green)', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1, minWidth: '240px', flexWrap: 'wrap' }}>
             <div>
-              <h3 className="card-title" style={{ marginBottom: '4px' }}>Complete your profile</h3>
-              <p className="card-meta">Add your professional interests to get better mentor recommendations.</p>
+              <h3 className="card-title" style={{ marginBottom: '2px' }}>Complete your profile</h3>
+              <p className="card-meta">Add interests for better matches.</p>
             </div>
             
-            <div className="completion-bar-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
-              <div className="completion-bar-track" style={{ flex: 1, height: '6px', background: 'rgba(15, 110, 86, 0.1)', borderRadius: '99px', overflow: 'hidden', maxWidth: '200px' }}>
+            <div className="completion-bar-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '150px' }}>
+              <div className="completion-bar-track" style={{ flex: 1, height: '4px', background: 'rgba(15, 110, 86, 0.1)', borderRadius: '99px', overflow: 'hidden', maxWidth: '150px' }}>
                 <div
                   className="completion-bar-fill"
                   style={{ width: `${completionPercent}%`, height: '100%', background: 'var(--brand-green)', borderRadius: '99px', transition: 'width 0.4s ease' }}
                 />
               </div>
-              <span className="completion-label" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--brand-green)', whiteSpace: 'nowrap' }}>
-                {completionPercent}% complete
+              <span className="completion-label" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--brand-green)', whiteSpace: 'nowrap' }}>
+                {completionPercent}%
               </span>
             </div>
           </div>
           
-          <button className="btn-secondary full-width-mobile" onClick={onUpdateProfile}>
-            Update Profile <ChevronRight size={16} />
+          <button className="btn-secondary full-width-mobile" onClick={onUpdateProfile} style={{ padding: '8px' }}>
+            Update Profile <ChevronRight size={14} />
           </button>
         </div>
       )}
 
-      <section className="dashboard-section" style={{ marginBottom: '48px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Sparkles size={18} color="var(--accent)" />
+      <section className="dashboard-section" style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Sparkles size={16} color="var(--accent)" />
             <h2 className="section-heading" style={{ margin: 0 }}>Recommended Mentors</h2>
           </div>
           <span 
             className="meta-text" 
-            style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: 'var(--brand-green)', display: 'flex', alignItems: 'center', gap: '4px' }} 
+            style={{ cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--brand-green)', display: 'flex', alignItems: 'center', gap: '4px' }} 
             onClick={onViewDirectory}
           >
-            View full directory →
+            Directory →
           </span>
         </div>
         
-        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
           {loading ? (
             [1, 2, 3].map(i => <div key={i} className="card" style={{ height: '220px', opacity: 0.5 }}></div>)
           ) : (
