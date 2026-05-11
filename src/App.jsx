@@ -1,4 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import { 
+  Home, 
+  Users, 
+  Mail, 
+  User as UserIcon, 
+  Settings, 
+  LogOut, 
+  Sun, 
+  Moon,
+  Shield
+} from 'lucide-react'
 import Auth from './components/Auth'
 import Dashboard from './components/Dashboard'
 import Directory from './components/Directory'
@@ -45,8 +56,8 @@ function App() {
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <span style={{ fontSize: '1.8rem' }}>🛡️</span>
-          <span className="premium-font">StareheConnect</span>
+          <Shield size={32} color="var(--primary)" strokeWidth={2.5} />
+          <span className="logo-font" style={{ fontSize: '1.4rem' }}>StareheConnect</span>
         </div>
         
         {currentUser && (
@@ -65,32 +76,33 @@ function App() {
       <div className="sidebar-nav">
         <div className="nav-label">Main Menu</div>
         <div className={`sidebar-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
-          <span>🏠</span> <span>Home</span>
+          <Home size={18} /> <span>Home</span>
         </div>
         <div className={`sidebar-item ${view === 'directory' ? 'active' : ''}`} onClick={() => setView('directory')}>
-          <span>🔍</span> <span>Directory</span>
+          <Users size={18} /> <span>Directory</span>
         </div>
         <div className={`sidebar-item ${view === 'chats' ? 'active' : ''}`} onClick={() => setView('chats')}>
-          <span>✉️</span> <span>Messages</span>
+          <Mail size={18} /> <span>Messages</span>
         </div>
 
         <div className="nav-label">Account</div>
         <div className={`sidebar-item ${view === 'profile' && selectedProfile?._id === currentUser?._id ? 'active' : ''}`} onClick={() => { setSelectedProfile(currentUser); setView('profile'); }}>
-          <span>👤</span> <span>My Profile</span>
+          <UserIcon size={18} /> <span>My Profile</span>
         </div>
         { (currentUser?.role === 'admin') && (
           <div className={`sidebar-item ${view === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>
-            <span>⚙️</span> <span>Admin</span>
+            <Settings size={18} /> <span>Admin</span>
           </div>
         )}
       </div>
 
       <div className="sidebar-nav" style={{ flexGrow: 0, marginBottom: '24px' }}>
         <div className="sidebar-item" onClick={toggleTheme}>
-          <span>{theme === 'dark' ? '☀️' : '🌙'}</span> <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} 
+          <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </div>
         <div className="sidebar-item" onClick={handleSignOut} style={{ color: 'var(--secondary)' }}>
-          <span>🚪</span> <span>Sign Out</span>
+          <LogOut size={18} /> <span>Sign Out</span>
         </div>
       </div>
     </div>
@@ -98,7 +110,7 @@ function App() {
 
   const LandingPage = () => (
     <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px', background: 'var(--bg-main)' }}>
-      <div style={{ fontSize: '5rem', marginBottom: '24px' }}>🛡️</div>
+      <Shield size={120} color="var(--primary)" style={{ marginBottom: '32px' }} strokeWidth={1.5} />
       <h1 className="page-title" style={{ fontSize: '4rem', marginBottom: '16px' }}>StareheConnect</h1>
       <p className="body-text" style={{ marginBottom: '40px', fontSize: '1.2rem', maxWidth: '600px', color: 'var(--text-muted)' }}>
         The official mentorship and professional networking platform for the Starehe Boys' Centre community.

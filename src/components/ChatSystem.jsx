@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
+import { 
+  Search, 
+  Send, 
+  Trash2, 
+  MoreVertical, 
+  MessageSquare,
+  ArrowLeft
+} from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -94,7 +102,6 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
           const conv = await res.json();
           if (conv._id) {
             setConversations(prev => {
-              // Check if we already have this conversation in state
               if (prev.some(c => c._id === conv._id)) return prev;
               return [conv, ...prev];
             });
@@ -102,7 +109,7 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
           }
         } catch (err) { 
           console.error(err); 
-          setupRef.current = null; // Allow retry on error
+          setupRef.current = null;
         }
       };
       setup();
@@ -123,7 +130,6 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
       if (msg.conversationId === activeConvId) setMessages((prev) => [...prev, msg]);
       setConversations((prev) => prev.map((c) => c._id === msg.conversationId ? { ...c, lastMessage: msg } : c));
     });
-    // Listen for deleted messages
     socket.on("message_deleted", ({ messageId }) => {
       setMessages(prev => prev.filter(m => m._id !== messageId));
     });
@@ -138,7 +144,6 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
     try {
       const res = await fetch(`${API_BASE}/api/conversations`, { headers: { Authorization: `Bearer ${user.token}` } });
       const data = await res.json();
-      // Ensure no duplicates from server
       const unique = data.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i);
       setConversations(unique);
     } catch (err) { console.error(err); }
@@ -201,17 +206,19 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
 
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 96px)', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-      {/* Sidebar List */}
       <div style={{ width: '320px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
           <h2 className="section-heading" style={{ marginBottom: '16px' }}>Messages</h2>
-          <input 
-            placeholder="Search chats..." 
-            className="body-text"
-            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-main)' }}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input 
+              placeholder="Search chats..." 
+              className="body-text"
+              style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-main)' }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {filteredConvs.map(conv => {
@@ -234,7 +241,9 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
                     {conv.lastMessage?.content || 'Start a conversation'}
                   </div>
                 </div>
-                <div className="delete-chat" onClick={(e) => deleteConversation(e, conv._id)} style={{ position: 'absolute', right: '12px', opacity: 0, transition: '0.2s' }}>🗑️</div>
+                <div className="delete-chat" onClick={(e) => deleteConversation(e, conv._id)} style={{ position: 'absolute', right: '12px', opacity: 0, transition: '0.2s', padding: '4px' }}>
+                  <Trash2 size={14} color="var(--secondary)" />
+                </div>
               </div>
             );
           })}
@@ -242,18 +251,17 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
       </div>
 
       <style>{`
-        .conv-item:hover .delete-chat { opacity: 0.6 !important; }
-        .delete-chat:hover { opacity: 1 !important; color: var(--secondary); }
+        .conv-item:hover .delete-chat { opacity: 0.8 !important; }
+        .delete-chat:hover { opacity: 1 !important; transform: scale(1.1); }
         .msg-bubble:hover .unsend-btn { opacity: 1 !important; }
       `}</style>
 
-      {/* Main Chat Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {activeConv ? (
           <>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Avatar name={otherUser.fullName || otherUser.name} size={40} online={onlineUsers.has(otherUser._id)} />
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700 }}>{otherUser.fullName || otherUser.name}</div>
                 <div className="meta-text" style={{ fontSize: '12px' }}>{onlineUsers.has(otherUser._id) ? 'Online' : 'Offline'}</div>
               </div>
@@ -272,7 +280,9 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
                       <div className="meta-text" style={{ fontSize: '10px' }}>
                         {formatTime(item.createdAt)}
                       </div>
-                      {isMine && <span className="unsend-btn" onClick={() => unsendMessage(item._id)} style={{ fontSize: '10px', cursor: 'pointer', opacity: 0, color: 'var(--secondary)' }}>Unsend</span>}
+                      {isMine && <span className="unsend-btn" onClick={() => unsendMessage(item._id)} style={{ fontSize: '10px', cursor: 'pointer', opacity: 0, color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                        <Trash2 size={10} /> Unsend
+                      </span>}
                     </div>
                   </div>
                 );
@@ -291,13 +301,17 @@ export default function ChatSystem({ user: userData, initialTarget, onBack }) {
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 />
-                <button className="btn btn-primary" onClick={sendMessage}>Send</button>
+                <button className="btn btn-primary" onClick={sendMessage} style={{ padding: '12px 24px' }}>
+                  <Send size={18} />
+                </button>
               </div>
             </div>
           </>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>✉️</div>
+            <div style={{ padding: '24px', borderRadius: '50%', background: 'var(--bg-elevated)', marginBottom: '24px' }}>
+              <MessageSquare size={48} strokeWidth={1.5} />
+            </div>
             <h3 className="section-heading">Your Messages</h3>
             <p className="meta-text">Select a conversation to start chatting</p>
           </div>
