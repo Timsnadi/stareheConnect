@@ -109,6 +109,27 @@ function App() {
     </div>
   )
 
+  const MobileNav = () => (
+    <nav className="mobile-nav">
+      <div className={`mobile-nav-item ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
+        <Home size={20} />
+        <span>Home</span>
+      </div>
+      <div className={`mobile-nav-item ${view === 'directory' ? 'active' : ''}`} onClick={() => setView('directory')}>
+        <Users size={20} />
+        <span>Directory</span>
+      </div>
+      <div className={`mobile-nav-item ${view === 'chats' ? 'active' : ''}`} onClick={() => setView('chats')}>
+        <Mail size={20} />
+        <span>Messages</span>
+      </div>
+      <div className={`mobile-nav-item ${view === 'profile' && selectedProfile?._id === currentUser?._id ? 'active' : ''}`} onClick={() => { setSelectedProfile(currentUser); setView('profile'); }}>
+        <UserIcon size={20} />
+        <span>Profile</span>
+      </div>
+    </nav>
+  )
+
   const LandingPage = () => (
     <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px', background: 'var(--bg-page)' }}>
       <Shield size={100} color="var(--brand-green)" style={{ marginBottom: '32px' }} strokeWidth={1.5} />
@@ -122,9 +143,14 @@ function App() {
 
   return (
     <div className="app-root">
-      {user && view !== 'landing' && view !== 'auth' && <Sidebar />}
+      {user && view !== 'landing' && view !== 'auth' && (
+        <>
+          <Sidebar />
+          <MobileNav />
+        </>
+      )}
       
-      <main style={{ marginLeft: (user && view !== 'landing' && view !== 'auth') ? 'var(--nav-width)' : '0' }}>
+      <main style={{ marginLeft: '0' }}>
         {view === 'landing' && <LandingPage />}
         {view === 'auth' && <Auth onComplete={(data) => {
           setUser(data)

@@ -337,3 +337,97 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   border-color: var(--brand-green);
 }
+
+/* ── Mobile Overrides (Strictly < 1025px) ── */
+@media (max-width: 1024px) {
+  :root {
+    --nav-width: 0px;
+  }
+
+  main {
+    padding: 20px;
+    padding-bottom: 100px; /* Space for bottom nav */
+  }
+
+  .sidebar {
+    display: none !important;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .card-elevated, .card {
+    padding: 16px;
+  }
+
+  /* Bottom Navigation */
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: var(--bg-surface);
+    border-top: var(--border-subtle);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--brand-green);
+  }
+
+  /* Grid Stack */
+  .mobile-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  /* Form Zoom Prevention */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+  }
+
+  /* Large Touch Targets */
+  .btn-primary, .btn-secondary, button {
+    min-height: 44px;
+  }
+
+  /* Chat Mobile Adjustments */
+  .chat-container {
+    height: calc(100vh - 120px) !important;
+    border-radius: 0 !important;
+    margin: -20px !important;
+    width: calc(100% + 40px) !important;
+    border: none !important;
+  }
+}
+
+/* Desktop Only Sidebar Restoration */
+@media (min-width: 1025px) {
+  .mobile-nav {
+    display: none !important;
+  }
+  
+  main {
+    margin-left: var(--nav-width);
+  }
+}

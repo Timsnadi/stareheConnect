@@ -68,8 +68,8 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
       </header>
 
       {completionPercent < 100 && (
-        <div className="card-elevated" style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--brand-green)' }}>
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1 }}>
+        <div className="card-elevated" style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid var(--brand-green)', flexWrap: 'wrap', gap: '20px' }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1, minWidth: '280px' }}>
             <div>
               <h3 className="card-title" style={{ marginBottom: '4px' }}>Complete your profile</h3>
               <p className="card-meta">Add your professional interests to get better mentor recommendations.</p>
@@ -88,14 +88,14 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
             </div>
           </div>
           
-          <button className="btn-secondary" onClick={onUpdateProfile}>
+          <button className="btn-secondary" onClick={onUpdateProfile} style={{ width: '100%', maxWidth: 'none', justifyContent: 'center' }}>
             Update Profile <ChevronRight size={16} />
           </button>
         </div>
       )}
 
       <section className="dashboard-section" style={{ marginBottom: '48px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <Sparkles size={18} color="var(--accent)" />
             <h2 className="section-heading" style={{ margin: 0 }}>Recommended Mentors</h2>
@@ -109,7 +109,7 @@ function Dashboard({ user, onViewProfile, onStartChat, onViewDirectory, onUpdate
           </span>
         </div>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {loading ? (
             [1, 2, 3].map(i => <div key={i} className="card" style={{ height: '220px', opacity: 0.5 }}></div>)
           ) : (

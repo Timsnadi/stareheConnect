@@ -46,6 +46,8 @@ function Directory({ onViewProfile, onStartChat }) {
     return matchesSearch && matchesRole && matchesHouse && matchesIndustry
   })
 
+  const [showFilters, setShowFilters] = useState(false)
+
   return (
     <div className="directory-content animate-fade-in">
       <header style={{ marginBottom: '32px' }}>
@@ -53,9 +55,25 @@ function Directory({ onViewProfile, onStartChat }) {
         <p className="page-subtitle">Connect with alumni and students across generations.</p>
       </header>
 
+      {/* Filter Bar Toggle (Mobile) */}
+      <button 
+        className="btn-secondary" 
+        onClick={() => setShowFilters(!showFilters)}
+        style={{ display: 'none', marginBottom: '16px', width: '100%', justifyContent: 'center' }}
+        id="mobile-filter-toggle"
+      >
+        <Filter size={16} /> {showFilters ? 'Hide Filters' : 'Show Filters'}
+      </button>
+      <style>{`
+        @media (max-width: 1024px) {
+          #mobile-filter-toggle { display: flex !important; }
+          .directory-filters { display: ${showFilters ? 'flex' : 'none'} !important; }
+        }
+      `}</style>
+
       {/* Filter Bar */}
-      <div className="card" style={{ marginBottom: '40px', padding: '16px' }}>
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div className="card directory-filters" style={{ marginBottom: '40px', padding: '16px' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', width: '100%' }}>
           <div style={{ flex: 2, minWidth: '200px', position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
@@ -66,7 +84,7 @@ function Directory({ onViewProfile, onStartChat }) {
             />
           </div>
           
-          <div style={{ flex: 1, minWidth: '150px', position: 'relative' }}>
+          <div style={{ flex: 1, minWidth: '140px', position: 'relative' }}>
             <Filter size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <select 
               style={{ paddingLeft: '36px' }}
@@ -79,7 +97,7 @@ function Directory({ onViewProfile, onStartChat }) {
             </select>
           </div>
 
-          <div style={{ flex: 1, minWidth: '150px', position: 'relative' }}>
+          <div style={{ flex: 1, minWidth: '140px', position: 'relative' }}>
             <GraduationCap size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <select 
               style={{ paddingLeft: '36px' }}
@@ -98,7 +116,7 @@ function Directory({ onViewProfile, onStartChat }) {
           Loading directory...
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
           {filteredUsers.map(u => (
             <div key={u._id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>

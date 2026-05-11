@@ -68,17 +68,17 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
         </div>
       </header>
 
-      <div className="card-elevated" style={{ padding: '40px', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div className="avatar" style={{ width: '120px', height: '120px', fontSize: '40px', flexShrink: 0 }}>
+      <div className="card-elevated profile-header-card" style={{ padding: '40px', marginBottom: '32px' }}>
+        <div className="mobile-column" style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="avatar profile-avatar" style={{ width: '120px', height: '120px', fontSize: '40px', flexShrink: 0 }}>
             {profile.name?.charAt(0)}
           </div>
           
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+          <div style={{ flex: 1, minWidth: '300px' }} className="profile-info-content">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }} className="profile-name-row">
               <div>
                 <h1 className="page-title" style={{ fontSize: '32px' }}>{profile.name}</h1>
-                <p style={{ fontSize: '16px', color: 'var(--brand-green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <p style={{ fontSize: '16px', color: 'var(--brand-green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }} className="profile-profession">
                   {isAlumnus ? <Briefcase size={16} /> : <Award size={16} />}
                   {isAlumnus ? (profile.profession || 'Starehe Alumnus') : `${profile.house} House Student`}
                 </p>
@@ -90,7 +90,7 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
               )}
             </div>
 
-            <div className="profile-stat-grid" style={{ display: 'flex', alignItems: 'flex-start', gap: 0, margin: '24px 0' }}>
+            <div className="profile-stat-grid mobile-column" style={{ display: 'flex', alignItems: 'flex-start', gap: 0, margin: '24px 0' }}>
               <div className="profile-stat-item" style={{ flex: 1, padding: '0 20px 0 0', borderRight: '1px solid var(--border)' }}>
                 <span className="profile-stat-value" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>{profile.house}</span>
                 <span className="profile-stat-label" style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>House</span>
@@ -109,7 +109,7 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
               </div>
             </div>
 
-            <div style={{ lineHeight: '1.6' }}>
+            <div style={{ lineHeight: '1.6' }} className="profile-about-section">
               <h3 className="section-heading">About</h3>
               <p className="body-text">
                 {profile.bio || `A proud Starehian from ${profile.house} house. Committed to the school's legacy of excellence and duty.`}
@@ -118,8 +118,19 @@ function ProfileView({ profile, isOwn, onBack, onStartChat, onLogout, onEdit }) 
           </div>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 1024px) {
+          .profile-header-card { padding: 24px !important; text-align: center; }
+          .mobile-column { flex-direction: column !important; align-items: center !important; text-align: center !important; }
+          .profile-avatar { margin: 0 auto !important; }
+          .profile-stat-item { border: none !important; padding: 10px !important; width: 100% !important; }
+          .profile-name-row { flex-direction: column !important; align-items: center !important; gap: 16px !important; }
+          .profile-profession { justify-content: center !important; }
+          .profile-stat-grid { margin: 16px 0 !important; }
+        }
+      `}</style>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+      <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '48px' }}>
         {/* Conditional Cards */}
         {isAlumnus ? (
           <>

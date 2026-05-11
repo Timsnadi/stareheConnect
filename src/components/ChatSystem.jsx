@@ -202,12 +202,25 @@ function ChatSystem({ user, initialTarget, onBack }) {
   const groupedMessages = useMemo(() => groupMessagesByDate(messages), [messages])
 
   return (
-    <div className="chat-container animate-fade-in" style={{ height: 'calc(100vh - 80px)', display: 'flex', background: 'var(--bg-surface)', borderRadius: '16px', overflow: 'hidden', border: 'var(--border-subtle)' }}>
+    <div className="chat-container animate-fade-in">
+      <style>{`
+        @media (max-width: 1024px) {
+          .chat-sidebar-mobile { display: ${activeConversation ? 'none' : 'flex'} !important; width: 100% !important; }
+          .chat-window-mobile { display: ${activeConversation ? 'flex' : 'none'} !important; width: 100% !important; }
+          .mobile-back-btn { display: flex !important; }
+        }
+      `}</style>
+
       {/* ── Conversation List ── */}
-      <div style={{ width: '320px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface-elevated)' }}>
+      <div className="chat-sidebar-mobile" style={{ width: '320px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-surface-elevated)' }}>
         <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 className="section-heading">Messages</h2>
-          <div style={{ position: 'relative', marginTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <button className="mobile-back-btn btn-secondary" style={{ display: 'none', padding: '8px' }} onClick={onBack}>
+              <ArrowLeft size={18} />
+            </button>
+            <h2 className="section-heading" style={{ margin: 0 }}>Messages</h2>
+          </div>
+          <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               placeholder="Search chats..." 
@@ -260,11 +273,14 @@ function ChatSystem({ user, initialTarget, onBack }) {
       </div>
 
       {/* ── Chat Window ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-page)' }}>
+      <div className="chat-window-mobile" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-page)' }}>
         {activeConversation ? (
           <>
             <div style={{ padding: '16px 24px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button className="mobile-back-btn btn-secondary" style={{ display: 'none', padding: '8px' }} onClick={() => setActiveConversation(null)}>
+                  <ArrowLeft size={18} />
+                </button>
                 <Avatar name={activeConversation.participants.find(p => p._id !== currentUserId)?.name} online={true} />
                 <div>
                   <h3 className="card-title">{activeConversation.participants.find(p => p._id !== currentUserId)?.name}</h3>
