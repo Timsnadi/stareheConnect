@@ -12,6 +12,25 @@ import {
 
 const API_URL = 'http://localhost:5000/api'
 
+const SkeletonCard = () => (
+  <div className="card skeleton" style={{ height: '240px', display: 'flex', flexDirection: 'column', gap: '16px', opacity: 0.6 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(0,0,0,0.1)' }}></div>
+        <div>
+          <div style={{ width: '120px', height: '16px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', marginBottom: '8px' }}></div>
+          <div style={{ width: '80px', height: '12px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px' }}></div>
+        </div>
+      </div>
+    </div>
+    <div style={{ width: '100%', height: '60px', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}></div>
+    <div style={{ marginTop: 'auto', display: 'flex', gap: '12px' }}>
+      <div style={{ flex: 1, height: '36px', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}></div>
+      <div style={{ flex: 1, height: '36px', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}></div>
+    </div>
+  </div>
+)
+
 const HOUSES = [
   'Patshaw', 'Geturo', 'Ngala', 'Gikubu', 'RoundSquare', 
   'Kibaki', 'Njonjo', 'Kirkley', 'Shell', 'Chaka', 'Pele', 'Muriuki'
@@ -105,8 +124,8 @@ function Directory({ onViewProfile, onStartChat }) {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px', color: 'var(--text-muted)' }}>
-          Loading directory...
+        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+          {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
         </div>
       ) : (
         <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
