@@ -22,11 +22,18 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
+// ── Existing routes ──────────────────────────────────────────────
+app.use('/api/auth',          require('./routes/auth'));
+app.use('/api/users',         require('./routes/users'));
 app.use('/api/conversations', require('./routes/conversations'));
-app.use('/api/messages', require('./routes/messages'));
+app.use('/api/messages',      require('./routes/messages'));
+
+// ── New routes ───────────────────────────────────────────────────
+app.use('/api/feed',          require('./routes/feed'));
+app.use('/api/events',        require('./routes/events'));
+app.use('/api/jobs',          require('./routes/jobs'));
+app.use('/api/resources',     require('./routes/resources'));
+app.use('/api/community',     require('./routes/community'));
 
 // MongoDB Connection
 const PORT = process.env.PORT || 5000;
@@ -54,20 +61,20 @@ io.on('connection', (socket) => {
     socket.join(userId);
     onlineUsers.set(userId, socket.id);
     console.log(`User ${userId} connected`);
-    
-    // Broadcast online status
     io.emit('online_users', Array.from(onlineUsers.keys()));
     io.emit('user_online', userId);
   });
 
   socket.on('send_message', (data) => {
-    // data: { _id, conversationId, senderId, senderName, content, receiverId, ... }
     io.to(data.receiverId).emit('receive_message', data);
   });
 
+  // Broadcast new feed posts to all connected clients
+  socket.on('new_post', (post) => {
+    socket.broadcast.emit('feed_post', post);
+  });
+
   socket.on('typing', (data) => {
-    // data: { conversationId, userId, name }
-    const conv = data.conversationId;
     socket.broadcast.emit('typing', data);
   });
 

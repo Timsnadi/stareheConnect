@@ -1,11 +1,12 @@
-import { useOutletContext } from 'react-router-dom'
-import { Edit2, Bell } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Edit2, Bell, Save, X, Loader } from 'lucide-react'
 import Card, { CardTitle } from '../components/Card'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
-import { BADGES } from '../data/mockData'
-import { getProfile, displayInitials } from '../lib/sessionUser'
+import { getUser, updateUser, getBadges, getConnections } from '../lib/api'
+import { getProfile, pickAvatarVariant, displayInitials } from '../lib/sessionUser'
+import { BADGES as FALLBACK_BADGES } from '../data/mockData'
 
 const BADGE_ICONS = {
   Heart: '❤️', MessageCircle: '💬', Star: '⭐',
@@ -13,140 +14,179 @@ const BADGE_ICONS = {
   Trophy: '🏆', BookOpen: '📖',
 }
 
-const VARIANT_CYCLE = ['teal', 'blue', 'purple', 'amber', 'coral', 'green']
-
-function formatRole(role) {
-  if (!role) return null
-  if (role === 'alumnus') return 'Alumnus'
-  if (role === 'student') return 'Student'
-  if (role === 'admin') return 'Admin'
-  return role
-}
+const NOTIFICATIONS = [
+  { init: 'SC', avc: 'blue',  text: 'Welcome to StareheConnect! Complete your profile to get started.', time: 'Just now' },
+]
 
 export default function MyProfile() {
-  const { userSession } = useOutletContext()
-  const profile = getProfile(userSession)
-  const name = profile?.name || 'Member'
-  const initials = displayInitials(name)
+  const me = getProfile()
+  const [profile, setProfile]   = useState(null)
+  const [badges, setBadges]     = useState([])
+  const [connections, setConnections] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [editing, setEditing]   = useState(false)
+  const [saving, setSaving]     = useState(false)
+  const [saveError, setSaveError] = useState(null)
+  const [form, setForm]         = useState({})
 
-  const subtitleParts = [profile?.stream, profile?.house].filter(Boolean)
-  const subtitle = subtitleParts.length
-    ? subtitleParts.join(' · ')
-    : [formatRole(profile?.role)].filter(Boolean).join('') || 'Your profile'
+  useEffect(() => {
+    if (!me?.id) { setLoading(false); return }
+    Promise.all([
+      getUser(me.id).then(r => {
+        setProfile(r.data)
+        setForm({
+          name: r.data.name || '',
+          bio: r.data.bio || '',
+          profession: r.data.profession || '',
+          location: r.data.location || '',
+        })
+      }).catch(() => setProfile(me)),
+      getBadges(me.id).then(r => setBadges(r.data)).catch(() => setBadges(FALLBACK_BADGES.map(b => ({ ...b, earned: false })))),
+      getConnections(me.id).then(r => setConnections(r.data)).catch(() => {}),
+    ]).finally(() => setLoading(false))
+  }, [])
 
-  const identityTags = []
-  if (profile?.house) identityTags.push({ label: profile.house, variant: 'teal' })
-  if (profile?.stream) identityTags.push({ label: profile.stream, variant: 'blue' })
-  const roleLabel = formatRole(profile?.role)
-  if (roleLabel) identityTags.push({ label: roleLabel, variant: 'purple' })
-  if (Array.isArray(profile?.clubs)) {
-    profile.clubs.forEach((club, i) => {
-      if (club) identityTags.push({ label: club, variant: VARIANT_CYCLE[(identityTags.length + i) % VARIANT_CYCLE.length] })
-    })
+  async function handleSave() {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const res = await updateUser(me.id, form)
+      setProfile(res.data)
+      setEditing(false)
+    } catch {
+      setSaveError('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const careerTags = []
-  if (Array.isArray(profile?.clubs) && profile.clubs.length) {
-    profile.clubs.forEach((club, i) => {
-      if (club) careerTags.push({ label: club, variant: VARIANT_CYCLE[i % VARIANT_CYCLE.length] })
-    })
-  }
-  if (profile?.profession) careerTags.push({ label: profile.profession, variant: 'gray' })
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', gap: 10, color: 'var(--color-text-muted)' }}>
+      <Loader size={18} /> Loading profile…
+    </div>
+  )
 
-  const stats = [
-    { n: 0, label: 'Mentors connected' },
-    { n: 0, label: 'Sessions done' },
-    { n: 0, label: 'Badges earned' },
-    { n: 0, label: 'Resources read' },
+  const p = profile || me || {}
+  const earnedCount = badges.filter(b => b.earned).length
+  const STATS = [
+    { n: connections.length,  label: 'Connections' },
+    { n: earnedCount,         label: 'Badges earned' },
   ]
-
-  const badgesDisplay = BADGES.map(b => ({ ...b, earned: false }))
-  const earnedCount = 0
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.3fr) minmax(0,1fr)', gap: 16, alignItems: 'start' }}>
 
+      {/* Left */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Card>
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 16 }}>
-            <Avatar init={initials} avc="teal" size={60} />
+            <Avatar init={displayInitials(p)} avc={pickAvatarVariant(p)} size={60} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 500 }}>{name}</div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{subtitle}</div>
+              {editing ? (
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  style={{ fontSize: 16, fontWeight: 500, padding: '4px 8px', width: '100%', marginBottom: 6 }} />
+              ) : (
+                <div style={{ fontSize: 17, fontWeight: 500 }}>{p.name}</div>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: editing ? 0 : 2 }}>
+                {p.role === 'alumnus' ? 'Alumni' : 'Student'} · {p.stream} · {p.house} House
+              </div>
               <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-                {identityTags.length > 0 ? (
-                  identityTags.map((t, i) => (
-                    <Badge key={`${t.label}-${i}`} variant={t.variant}>{t.label}</Badge>
-                  ))
-                ) : (
-                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Add house and stream in profile settings when available.</span>
-                )}
+                {p.house   && <Badge variant="teal">{p.house} House</Badge>}
+                {p.stream  && <Badge variant="blue">{p.stream}</Badge>}
+                {p.role    && <Badge variant="purple">{p.role === 'alumnus' ? 'Alumni' : 'Student'}</Badge>}
+                {(p.clubs || []).slice(0, 2).map(c => <Badge key={c} variant="amber">{c}</Badge>)}
               </div>
             </div>
-            <Button variant="secondary" size="sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <Edit2 size={12} /> Edit
-            </Button>
+            {editing ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Save size={12} /> {saving ? 'Saving…' : 'Save'}
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
+                  <X size={12} />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={() => setEditing(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Edit2 size={12} /> Edit
+              </Button>
+            )}
           </div>
 
+          {saveError && (
+            <div style={{ fontSize: 12, color: '#993C1D', marginBottom: 10 }}>{saveError}</div>
+          )}
+
+          {/* Bio */}
           <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
-              Career goals
-            </div>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              {careerTags.length > 0 ? (
-                careerTags.map((t, i) => (
-                  <Badge key={`c-${t.label}-${i}`} variant={t.variant}>{t.label}</Badge>
-                ))
+            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Bio</div>
+            {editing ? (
+              <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                placeholder="Tell the community about yourself…"
+                style={{ width: '100%', padding: '8px 12px', resize: 'none', height: 72, fontSize: 13, borderRadius: 'var(--radius-md)' }} />
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+                {p.bio || 'No bio yet. Click Edit to add one.'}
+              </p>
+            )}
+          </div>
+
+          {/* Profession (alumni) */}
+          {(p.role === 'alumnus' || editing) && (
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Profession</div>
+              {editing ? (
+                <input value={form.profession} onChange={e => setForm(f => ({ ...f, profession: e.target.value }))}
+                  placeholder="e.g. Software Engineer @ Safaricom"
+                  style={{ padding: '7px 10px', fontSize: 13, width: '100%' }} />
               ) : (
-                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Goals will appear here as you complete onboarding and update your profile.</span>
+                <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{p.profession || '—'}</div>
               )}
             </div>
-          </div>
+          )}
 
-          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>
-              Mentorship progress
+          {/* Clubs */}
+          {(p.clubs || []).length > 0 && (
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>Clubs & activities</div>
+              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                {(p.clubs || []).map(c => <Badge key={c} variant="amber">{c}</Badge>)}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 6 }}>
-              Connect with mentors to see sessions and milestones here. (Live stats when the API is connected.)
-            </div>
-            <div style={{ height: 5, background: 'var(--color-bg)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{ height: '100%', background: 'var(--color-primary)', borderRadius: 3, width: '0%' }} />
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>0% — start from the Matching or Alumni pages</div>
-          </div>
+          )}
         </Card>
 
         <Card>
           <CardTitle>My badges</CardTitle>
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12 }}>
-            Sample badge types below; yours will unlock as you use the platform.
-          </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 14 }}>
-            {badgesDisplay.map(b => (
-              <div key={b.name} style={{
+            {badges.map(b => (
+              <div key={b.key || b.name} style={{
                 background: 'var(--color-bg)', borderRadius: 'var(--radius-md)',
                 padding: '10px 6px', textAlign: 'center',
-                opacity: b.earned ? 1 : 0.4,
+                opacity: b.earned ? 1 : 0.35,
                 border: b.earned ? '1px solid var(--color-border)' : '1px dashed var(--color-border)',
               }}>
-                <div style={{ fontSize: 20, marginBottom: 5 }}>{BADGE_ICONS[b.icon]}</div>
+                <div style={{ fontSize: 20, marginBottom: 5 }}>{BADGE_ICONS[b.icon] || '🏅'}</div>
                 <div style={{ fontSize: 10, color: 'var(--color-text-secondary)', lineHeight: 1.3 }}>{b.name}</div>
               </div>
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 5 }}>
-            <span>Progress</span><span>{earnedCount} / {BADGES.length} earned</span>
+            <span>Progress</span><span>{earnedCount} / {badges.length} earned</span>
           </div>
           <div style={{ height: 5, background: 'var(--color-bg)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: 'var(--color-primary)', borderRadius: 3, width: `${Math.round(earnedCount / BADGES.length * 100)}%` }} />
+            <div style={{ height: '100%', background: 'var(--color-primary)', borderRadius: 3, width: `${badges.length > 0 ? Math.round(earnedCount / badges.length * 100) : 0}%` }} />
           </div>
         </Card>
       </div>
 
+      {/* Right */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {stats.map(s => (
+          {STATS.map(s => (
             <div key={s.label} style={{
               background: 'var(--color-surface)', border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-lg)', padding: '12px 14px',
@@ -159,10 +199,36 @@ export default function MyProfile() {
 
         <Card>
           <CardTitle icon={Bell}>Notifications</CardTitle>
-          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '12px 0' }}>
-            You&apos;re all caught up. Notifications will appear here when the feed is connected to your account.
-          </div>
+          {NOTIFICATIONS.map((n, i) => (
+            <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: i < NOTIFICATIONS.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
+              <Avatar init={n.init} avc={n.avc} size={30} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: 'var(--color-text-primary)', lineHeight: 1.5 }}>{n.text}</div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>{n.time}</div>
+              </div>
+            </div>
+          ))}
         </Card>
+
+        {connections.length > 0 && (
+          <Card>
+            <CardTitle>My connections</CardTitle>
+            {connections.map(c => (
+              <div key={c._id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--color-border)' }}>
+                <Avatar
+                  init={c.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                  avc={pickAvatarVariant(c)} size={30}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                    {c.profession || c.role} · {c.house} House
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Card>
+        )}
       </div>
     </div>
   )

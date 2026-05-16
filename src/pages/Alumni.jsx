@@ -1,134 +1,79 @@
 import { useState, useEffect } from 'react'
-import { useOutletContext, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { MapPin, X, MessageCircle } from 'lucide-react'
+import { MapPin, X, Loader, AlertTriangle } from 'lucide-react'
 import Card, { CardTitle } from '../components/Card'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import Button from '../components/Button'
 import WorldMap from '../components/WorldMap'
-import { ALUMNI } from '../data/mockData'
-import { getProfile, displayInitials, pickAvatarVariant, currentUserId } from '../lib/sessionUser'
-
-const API_URL = 'http://localhost:5000/api'
+import { getUsers, createConversation } from '../lib/api'
+import { getProfile, pickAvatarVariant } from '../lib/sessionUser'
+import { ALUMNI as FALLBACK_ALUMNI } from '../data/mockData'
+import { useNavigate } from 'react-router-dom'
 
 const FIELDS = ['All', 'Technology', 'Finance', 'Medicine', 'Law', 'Engineering', 'Education', 'Entrepreneurship']
 
-function inferField(profession, stream) {
-  const p = (profession || '').toLowerCase()
-  const rules = [
-    ['Technology', ['software', 'engineer', 'developer', 'data', 'tech', 'it ', 'it,', 'code']],
-    ['Finance', ['bank', 'finance', 'investment', 'analyst', 'accounting']],
-    ['Medicine', ['doctor', 'medical', 'health', 'nurse', 'clinical']],
-    ['Law', ['law', 'advocate', 'legal', 'court']],
-    ['Engineering', ['engineer', 'civil', 'construction', 'infrastructure']],
-    ['Education', ['lecturer', 'teacher', 'education', 'academic', 'professor']],
-    ['Entrepreneurship', ['founder', 'entrepreneur', 'self-employed', 'startup']],
-  ]
-  for (const [label, keys] of rules) {
-    if (keys.some(k => p.includes(k))) return label
-  }
-  const s = (stream || '').toLowerCase()
-  if (s.includes('science')) return 'Technology'
-  if (s.includes('commerce')) return 'Finance'
-  if (s.includes('art')) return 'Education'
-  return 'Technology'
-}
-
-function mapApiUser(u, index) {
-  const name = u.name || 'Member'
-  const id = String(u._id)
-  return {
-    _id: id,
-    source: 'api',
-    init: displayInitials(name),
-    avc: pickAvatarVariant(id + index),
-    name,
-    role: u.profession || (u.role === 'alumnus' ? 'Alumnus' : u.role === 'student' ? 'Student' : u.role || 'Member'),
-    co: [u.stream, u.house].filter(Boolean).join(' · ') || 'Starehe Boys Centre',
-    house: u.house || '—',
-    year: u.yearLeft != null ? String(u.yearLeft) : u.yearJoined != null ? String(u.yearJoined) : '—',
-    loc: u.location || 'Kenya',
-    field: inferField(u.profession, u.stream),
-    bio: u.bio || '',
-    stream: u.stream,
-    profession: u.profession,
-  }
+function nameInitials(name = '') {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
 export default function Alumni() {
-  const { userSession } = useOutletContext()
+  const me       = getProfile()
   const navigate = useNavigate()
-  const me = getProfile(userSession)
-  const myId = currentUserId(me)
-
-  const [filter, setFilter] = useState('All')
-  const [search, setSearch] = useState('')
+  const [alumni, setAlumni]           = useState([])
+  const [filter, setFilter]           = useState('All')
+  const [search, setSearch]           = useState('')
   const [openProfile, setOpenProfile] = useState(null)
-  const [loadState, setLoadState] = useState({ status: 'loading', rows: [] })
-  const [fetchError, setFetchError] = useState(null)
+  const [loading, setLoading]         = useState(true)
+  const [fallback, setFallback]       = useState(false)
+  const [error, setError]             = useState(null)
 
   useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      setFetchError(null)
-      setLoadState({ status: 'loading', rows: [] })
-      try {
-        const headers = {}
-        if (userSession?.token) headers.Authorization = `Bearer ${userSession.token}`
-        const res = await axios.get(`${API_URL}/users`, { headers })
-        if (cancelled) return
-        const mapped = (res.data || [])
-          .map((u, i) => mapApiUser(u, i))
-          .filter(r => myId == null || String(r._id) !== String(myId))
-        if (mapped.length > 0) {
-          setLoadState({ status: 'live', rows: mapped })
+    getUsers()
+      .then(r => {
+        const others = r.data.filter(u => u._id !== me?.id && u.role !== 'admin')
+        if (others.length === 0) {
+          setAlumni([])
         } else {
-          setLoadState({ status: 'empty', rows: [] })
+          setAlumni(others)
         }
-      } catch (e) {
-        if (!cancelled) {
-          console.error(e)
-          setFetchError('Could not load directory from the server.')
-          setLoadState({
-            status: 'mock',
-            rows: ALUMNI.map((a, i) => ({ ...a, _id: `mock-${i}`, source: 'mock' })),
-          })
-        }
-      }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [userSession?.token, myId])
+      })
+      .catch(() => {
+        setAlumni(FALLBACK_ALUMNI)
+        setFallback(true)
+        setError('Could not reach the server. Showing sample data.')
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
-  const { status, rows: directory } = loadState
-  const usingMock = status === 'mock'
-  const isEmpty = status === 'empty'
-  const loading = status === 'loading'
-
-  const filtered = directory.filter(a => {
-    const fMatch = filter === 'All' || a.field === filter
-    const q = search.toLowerCase()
-    const sMatch = !q || a.name.toLowerCase().includes(q) || String(a.co).toLowerCase().includes(q) || String(a.role).toLowerCase().includes(q)
+  const filtered = alumni.filter(a => {
+    const field = a.field || a.profession || ''
+    const fMatch = filter === 'All' || field.toLowerCase().includes(filter.toLowerCase()) || (a.role === 'alumnus' && filter === 'All')
+    const sMatch = !search
+      || a.name?.toLowerCase().includes(search.toLowerCase())
+      || (a.profession || a.co || '').toLowerCase().includes(search.toLowerCase())
     return fMatch && sMatch
   })
 
-  const mapBlurb = usingMock
-    ? 'Map dots are sample locations for the prototype.'
-    : isEmpty
-      ? 'Add more members to see the network grow. Map is illustrative until locations are stored on profiles.'
-      : `${directory.length} registered members (non-admin). Map is illustrative until locations are stored on profiles.`
+  async function handleMessage(user) {
+    try {
+      const res = await createConversation(user._id)
+      navigate('/messages', { state: { conversationId: res.data._id } })
+    } catch {
+      setError('Could not start conversation. Please try again.')
+    }
+  }
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', gap: 10, color: 'var(--color-text-muted)' }}>
+      <Loader size={18} /> Loading alumni…
+    </div>
+  )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {fetchError && (
-        <div style={{ fontSize: 13, color: 'var(--color-text-primary)', background: 'var(--color-amber-bg)', padding: '10px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-          {fetchError} Showing demo alumni until the API is reachable.
-        </div>
-      )}
-      {!usingMock && !isEmpty && (
-        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-          Directory shows live accounts from the database (you are excluded from your own list).
+      {error && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#FAEEDA', color: '#412402', borderRadius: 'var(--radius-md)', fontSize: 13 }}>
+          <AlertTriangle size={14} /> {error}
         </div>
       )}
 
@@ -140,69 +85,61 @@ export default function Alumni() {
         />
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {FIELDS.map(f => (
-            <Button key={f} variant={filter === f ? 'success' : 'secondary'} size="sm" onClick={() => setFilter(f)}>{f}</Button>
+            <Button key={f} variant={filter === f ? 'success' : 'secondary'} size="sm"
+              onClick={() => setFilter(f)}>{f}
+            </Button>
           ))}
         </div>
       </div>
 
-      {loading && (
-        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Loading directory…</div>
-      )}
-
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.3fr) minmax(0,1fr)', gap: 14, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map(a => (
-            <Card key={a._id} onClick={() => setOpenProfile(openProfile?._id === a._id ? null : a)}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: 13 }}>
+              {fallback ? 'No alumni matched your filter.' : 'No other users found yet.'}
+            </div>
+          ) : filtered.map(a => (
+            <Card key={a._id || a.init} onClick={() => setOpenProfile(prev => prev === (a._id || a.init) ? null : (a._id || a.init))}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <Avatar init={a.init} avc={a.avc} size={44} />
+                <Avatar init={nameInitials(a.name)} avc={pickAvatarVariant(a)} size={44} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 500 }}>{a.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{a.role} · {a.co}</div>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                    {a.profession || a.role} {a.co ? `· ${a.co}` : ''}
+                  </div>
                   <div style={{ display: 'flex', gap: 5, marginTop: 6, flexWrap: 'wrap' }}>
-                    <Badge variant="teal">{a.house} House</Badge>
-                    <Badge variant="blue">Class of {a.year}</Badge>
-                    <Badge variant="purple">{a.field}</Badge>
-                    <Badge variant="gray"><MapPin size={9} /> {a.loc}</Badge>
+                    {a.house && <Badge variant="teal">{a.house} House</Badge>}
+                    {(a.yearLeft || a.year) && <Badge variant="blue">Class of {a.yearLeft || a.year}</Badge>}
+                    {(a.field || a.profession) && <Badge variant="purple">{a.field || a.profession}</Badge>}
+                    {(a.location || a.loc) && <Badge variant="gray"><MapPin size={9} /> {a.location || a.loc}</Badge>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <Button variant="success" size="sm" onClick={e => e.stopPropagation()}>Connect</Button>
-                  {a.source === 'api' && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigate('/messages', { state: { startChatWith: { _id: a._id, id: a._id, name: a.name } } })
-                      }}
-                    >
-                      <MessageCircle size={12} /> Message
-                    </Button>
-                  )}
-                </div>
+                {!fallback && (
+                  <Button variant="success" size="sm"
+                    onClick={e => { e.stopPropagation(); handleMessage(a) }}>
+                    Message
+                  </Button>
+                )}
               </div>
             </Card>
           ))}
-          {!loading && isEmpty && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: 13 }}>
-              No other members in the directory yet (or you are the only non-admin account). Invite others to register.
-            </div>
-          )}
-          {!loading && !isEmpty && filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)', fontSize: 13 }}>
-              No alumni match your filter.
-            </div>
-          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {openProfile && <ProfilePanel alum={openProfile} onClose={() => setOpenProfile(null)} onMessage={(row) => navigate('/messages', { state: { startChatWith: { _id: row._id, id: row._id, name: row.name } } })} />}
+          {openProfile && (
+            <ProfilePanel
+              user={filtered.find(a => (a._id || a.init) === openProfile)}
+              onClose={() => setOpenProfile(null)}
+              onMessage={!fallback ? handleMessage : null}
+            />
+          )}
           <Card>
             <CardTitle>Alumni world map</CardTitle>
             <WorldMap />
             <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 8 }}>
-              {mapBlurb}
+              {fallback
+                ? 'Illustrative map — showing sample locations.'
+                : `${alumni.length} users registered across multiple locations.`}
             </div>
           </Card>
         </div>
@@ -211,65 +148,66 @@ export default function Alumni() {
   )
 }
 
-function ProfilePanel({ alum, onClose, onMessage }) {
-  if (!alum) return null
-  const isApi = alum.source === 'api'
-
+function ProfilePanel({ user, onClose, onMessage }) {
+  if (!user) return null
   return (
     <Card style={{ border: '1px solid var(--color-border-strong)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          <Avatar init={alum.init} avc={alum.avc} size={52} />
+          <Avatar init={user.name?.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)} avc={pickAvatarVariant(user)} size={52} />
           <div>
-            <div style={{ fontSize: 16, fontWeight: 500 }}>{alum.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{alum.role} · {alum.co}</div>
+            <div style={{ fontSize: 16, fontWeight: 500 }}>{user.name}</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+              {user.profession || user.role} {user.co ? `· ${user.co}` : ''}
+            </div>
             <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-              <Badge variant="teal">{alum.house} House</Badge>
-              <Badge variant="blue">Class of {alum.year}</Badge>
-              <Badge variant="purple">{alum.field}</Badge>
+              {user.house && <Badge variant="teal">{user.house} House</Badge>}
+              {(user.yearLeft || user.year) && <Badge variant="blue">Class of {user.yearLeft || user.year}</Badge>}
+              {user.stream && <Badge variant="purple">{user.stream}</Badge>}
             </div>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', padding: 4, cursor: 'pointer' }} aria-label="Close">
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', padding: 4, cursor: 'pointer' }}>
           <X size={16} />
         </button>
       </div>
 
-      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12, marginTop: 4 }}>
+      {user.bio && (
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>{user.bio}</p>
+      )}
+
+      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
-          {isApi ? 'About' : 'Career timeline'}
+          Career timeline
         </div>
-        {isApi ? (
-          <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-            {alum.bio ? <p style={{ margin: '0 0 10px' }}>{alum.bio}</p> : <p style={{ margin: 0 }}>No bio yet. Connect to learn more.</p>}
-            <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Stream: {alum.stream || '—'} · Location: {alum.loc}</p>
-          </div>
-        ) : (
-          [
-            { label: `${alum.co} · ${alum.role}`, sub: '2023–present', active: true },
-            { label: 'Graduate role at previous company', sub: '2020–2023', active: false },
-            { label: `University of Nairobi · ${alum.field}`, sub: '2018–2022', active: false },
-            { label: `Starehe Boys Centre · Class of ${alum.year}`, sub: '', active: false },
-          ].map((item, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'flex-start' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.active ? 'var(--color-primary)' : '#D3D1C7', marginTop: 5, flexShrink: 0 }} />
-              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-                <strong style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{item.label}</strong>
-                {item.sub && <span style={{ color: 'var(--color-text-muted)' }}> · {item.sub}</span>}
-              </div>
+        {[
+          user.profession && { label: user.profession, sub: 'Current role', active: true },
+          user.yearJoined && { label: `Starehe Boys Centre`, sub: `${user.yearJoined}–${user.yearLeft || ''}`, active: false },
+        ].filter(Boolean).map((item, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'flex-start' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.active ? 'var(--color-primary)' : '#D3D1C7', marginTop: 5, flexShrink: 0 }} />
+            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+              <strong style={{ color: 'var(--color-text-primary)', fontWeight: 500 }}>{item.label}</strong>
+              {item.sub && <span style={{ color: 'var(--color-text-muted)' }}> · {item.sub}</span>}
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-        <Button variant="success" size="sm">Connect</Button>
-        <Button variant="secondary" size="sm">Request CV review</Button>
-        {isApi && (
-          <Button variant="secondary" size="sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => onMessage(alum)}>
-            <MessageCircle size={14} /> Message
-          </Button>
+      {user.clubs?.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 10, marginTop: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Clubs</div>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+            {user.clubs.map(c => <Badge key={c} variant="amber">{c}</Badge>)}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        {onMessage && (
+          <Button variant="success" size="sm" onClick={() => onMessage(user)}>Message</Button>
         )}
+        <Button variant="secondary" size="sm">Request CV review</Button>
       </div>
     </Card>
   )

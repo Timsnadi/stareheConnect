@@ -1,153 +1,77 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const User = require('./models/User');
+require('dotenv').config();
 
-const MONGO_URI = 'mongodb://localhost:27017/stareheConnect';
+const Event       = require('./models/Event');
+const Job         = require('./models/Job');
+const Scholarship = require('./models/Scholarship');
+const Resource    = require('./models/Resource');
 
-const alumni = [
-  {
-    name: 'James Kamau',
-    email: 'james@starehe.alumni',
-    password: 'password123',
-    role: 'alumnus',
-    house: 'Patshaw',
-    stream: 'A',
-    profession: 'Software Architect at Safaricom',
-    industry: 'Tech & Telecom',
-    location: 'Nairobi, Kenya',
-    clubs: ['ICT Club', 'Science Club'],
-    bio: 'Class of 2010. Passionate about mentoring the next generation of Kenyan engineers.',
-    yearLeft: 2010
-  },
-  {
-    name: 'Samuel Mwangi',
-    email: 'samuel@starehe.alumni',
-    password: 'password123',
-    role: 'alumnus',
-    house: 'Geturo',
-    stream: 'B',
-    profession: 'Investment Banker',
-    industry: 'Finance',
-    location: 'London, UK',
-    clubs: ['Business Club', 'Chess Club'],
-    bio: 'Helping Starehians navigate the world of global finance.',
-    yearLeft: 2008
-  },
-  {
-    name: 'Faith Njoroge',
-    email: 'faith@starehe.alumni',
-    password: 'password123',
-    role: 'alumnus',
-    house: 'Ngala',
-    stream: 'C',
-    profession: 'Senior Medical Officer',
-    industry: 'Healthcare',
-    location: 'Mombasa, Kenya',
-    clubs: ['Red Cross', 'St. Johns Ambulance'],
-    bio: 'Committed to school health initiatives and medical mentorship.',
-    yearLeft: 2012
-  },
-  {
-    name: 'David Otieno',
-    email: 'david@starehe.alumni',
-    password: 'password123',
-    role: 'alumnus',
-    house: 'Gikubu',
-    stream: 'A',
-    profession: 'Civil Engineer',
-    industry: 'Construction',
-    location: 'Nairobi, Kenya',
-    clubs: ['Scouts', 'Drama Club'],
-    bio: 'Expert in infrastructure development. Class of 2005.',
-    yearLeft: 2005
-  },
-  {
-    name: 'Sarah Wambui',
-    email: 'sarah@starehe.alumni',
-    password: 'password123',
-    role: 'alumnus',
-    house: 'RoundSquare',
-    stream: 'D',
-    profession: 'Legal Counsel',
-    industry: 'Law',
-    location: 'Nairobi, Kenya',
-    clubs: ['Debate Club', 'Interact'],
-    bio: 'Mentoring future legal minds of Starehe.',
-    yearLeft: 2014
-  }
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/stareheConnect';
+
+const EVENTS = [
+  { title: 'Tech careers webinar',      description: 'Alumni panel: breaking into tech from a Kenyan university.', date: 'Jun 12', month: 'Jun', day: '12', type: 'Webinar',   approved: true },
+  { title: 'Annual alumni homecoming',  description: 'Gathering at Starehe Boys Centre. Networking dinner and tour.', date: 'Jun 20', month: 'Jun', day: '20', type: 'In-person', approved: true },
+  { title: 'CV & interview bootcamp',   description: 'Full-day workshop. Alumni mentors give live CV feedback.', date: 'Jul 3',  month: 'Jul', day: '3',  type: 'Workshop',  approved: true },
+  { title: 'Finance & investing 101',   description: 'Personal finance, investing and banking careers.', date: 'Jul 14', month: 'Jul', day: '14', type: 'Webinar',   approved: true },
+  { title: 'Entrepreneurship summit',   description: 'Alumni entrepreneurs share their journeys.', date: 'Aug 2',  month: 'Aug', day: '2',  type: 'In-person', approved: true },
 ];
 
-const students = [
-  {
-    name: 'Peter Njoroge',
-    email: 'peter@starehe.student',
-    password: 'password123',
-    role: 'student',
-    house: 'Patshaw',
-    stream: 'A',
-    clubs: ['ICT Club', 'Badminton'],
-    bio: 'Form 4 student interested in Computer Science.',
-    yearJoined: 2021
-  },
-  {
-    name: 'Kevin Kipchumba',
-    email: 'kevin@starehe.student',
-    password: 'password123',
-    role: 'student',
-    house: 'Kibaki',
-    stream: 'B',
-    clubs: ['Football', 'Drama'],
-    bio: 'Passionate about sports and creative arts.',
-    yearJoined: 2022
-  },
-  {
-    name: 'Brian Mutua',
-    email: 'brian@starehe.student',
-    password: 'password123',
-    role: 'student',
-    house: 'Njonjo',
-    stream: 'C',
-    clubs: ['Science Club', 'Scouts'],
-    bio: 'Aspiring doctor and current Form 3 student.',
-    yearJoined: 2023
-  },
-  {
-    name: 'Fahim',
-    email: 'fahim@starehe.com',
-    password: 'password123',
-    role: 'student',
-    house: 'Patshaw',
-    stream: 'A',
-    clubs: ['ICT Club', 'Science Club'],
-    bio: 'Mentorship platform developer and student at Starehe.',
-    yearJoined: 2024
-  }
+const JOBS = [
+  { title: 'Software Engineering Intern',       company: 'Safaricom',        location: 'Nairobi', type: 'Internship', field: 'Technology',  deadline: 'Jun 20', active: true },
+  { title: 'Graduate Analyst — Digital Banking',company: 'KCB Bank',         location: 'Nairobi', type: 'Full-time',  field: 'Finance',     deadline: 'Jun 30', active: true },
+  { title: 'Junior Civil Engineer',             company: 'KENHA',            location: 'Nairobi', type: 'Full-time',  field: 'Engineering', deadline: 'Jul 5',  active: true },
+  { title: 'Editorial Intern',                  company: 'Nation Media Group',location: 'Nairobi', type: 'Internship', field: 'Media',       deadline: 'Jun 15', active: true },
+  { title: 'Research Assistant',                company: 'Strathmore University', location: 'Nairobi', type: 'Contract', field: 'Academia',  deadline: 'Jul 10', active: true },
+  { title: 'Backend Developer',                 company: 'Andela',           location: 'Remote',  type: 'Full-time',  field: 'Technology',  deadline: 'Jun 25', active: true },
 ];
 
-const seed = async () => {
+const SCHOLARSHIPS = [
+  { title: 'Kenya Education Fund — STEM Scholarship', amount: 'KES 150,000/yr', deadline: 'Jun 30, 2025', field: 'Sciences',       open: true },
+  { title: 'Mastercard Foundation Scholars Programme', amount: 'Full scholarship', deadline: 'Jul 15, 2025', field: 'All streams',  open: true },
+  { title: 'Aga Khan Foundation Bursary',              amount: 'KES 80,000/yr',  deadline: 'Aug 1, 2025',  field: 'Arts & Commerce', open: true },
+  { title: 'British Council Kenya — Study in UK Grant', amount: 'GBP 5,000',     deadline: 'Sep 10, 2025', field: 'All streams',   open: true },
+];
+
+const RESOURCES = [
+  { title: 'CV writing guide for Kenyan students',         type: 'Guide',     reads: 1200, approved: true },
+  { title: 'University application checklist 2025',        type: 'Checklist', reads: 874,  approved: true },
+  { title: 'Breaking into investment banking in Kenya',    type: 'Article',   reads: 2100, approved: true },
+  { title: 'Roadmap: becoming a software engineer',        type: 'Roadmap',   reads: 3400, approved: true },
+  { title: 'Medicine vs. nursing: a guide for Form 4',     type: 'Guide',     reads: 956,  approved: true },
+];
+
+async function seed() {
   try {
     await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB for seeding...');
+    console.log('Connected to MongoDB');
 
-    // Clear existing users to start fresh
-    await User.deleteMany({});
-    console.log('Cleared existing users.');
+    // Clear existing seed data
+    await Promise.all([
+      Event.deleteMany({}),
+      Job.deleteMany({}),
+      Scholarship.deleteMany({}),
+      Resource.deleteMany({}),
+    ]);
+    console.log('Cleared existing seed data');
 
-    const salt = await bcrypt.genSalt(10);
-    const users = [...alumni, ...students].map(async (u) => {
-      const hashedPassword = await bcrypt.hash(u.password, salt);
-      return { ...u, password: hashedPassword };
-    });
+    await Event.insertMany(EVENTS);
+    console.log(`Seeded ${EVENTS.length} events`);
 
-    const hashedUsers = await Promise.all(users);
-    await User.insertMany(hashedUsers);
+    await Job.insertMany(JOBS);
+    console.log(`Seeded ${JOBS.length} jobs`);
 
-    console.log(`Successfully seeded ${hashedUsers.length} users.`);
-    process.exit();
+    await Scholarship.insertMany(SCHOLARSHIPS);
+    console.log(`Seeded ${SCHOLARSHIPS.length} scholarships`);
+
+    await Resource.insertMany(RESOURCES);
+    console.log(`Seeded ${RESOURCES.length} resources`);
+
+    console.log('\n✅ Seed complete');
   } catch (err) {
-    console.error('Seeding error:', err);
-    process.exit(1);
+    console.error('Seed error:', err.message);
+  } finally {
+    await mongoose.disconnect();
   }
-};
+}
 
 seed();
